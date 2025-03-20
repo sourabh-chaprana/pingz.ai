@@ -1,13 +1,14 @@
-import { StyleSheet } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { StyleSheet, View, Text } from 'react-native';
+import AppLayout from '@/components/AppLayout';
 
 export default function DreamLabScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText style={styles.title}>Dream Lab</ThemedText>
-      <ThemedText style={styles.text}>Explore innovative features and experiments.</ThemedText>
-    </ThemedView>
+    <AppLayout>
+      <View style={styles.container}>
+        <Text style={styles.title}>Dream Lab</Text>
+        <Text style={styles.text}>Explore innovative features and experiments.</Text>
+      </View>
+    </AppLayout>
   );
 }
 
@@ -22,9 +23,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#333',
   },
   text: {
     fontSize: 16,
     textAlign: 'center',
+    color: '#666',
   },
 }); 
