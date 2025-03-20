@@ -3,12 +3,12 @@ import AppLayout from '@/components/AppLayout';
 
 export default function DreamLabScreen() {
   return (
-    <AppLayout>
+    
       <View style={styles.container}>
         <Text style={styles.title}>Dream Lab</Text>
         <Text style={styles.text}>Explore innovative features and experiments.</Text>
       </View>
-    </AppLayout>
+
   );
 }
 

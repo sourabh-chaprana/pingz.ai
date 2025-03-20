@@ -3,6 +3,7 @@ import { View, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { createElevation } from '../utils/styles';
 
 export default function AppLayout({ children }) {
   const router = useRouter();
@@ -17,22 +18,28 @@ export default function AppLayout({ children }) {
       <View style={styles.tabBar}>
         <TouchableOpacity onPress={() => router.push('/(tabs)')} style={styles.tabItem}>
           <Ionicons name="home-outline" size={24} color="#666" />
+          <Text style={styles.tabLabel}>Home</Text>
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => router.push('/(tabs)/projects')} style={styles.tabItem}>
           <Ionicons name="folder-outline" size={24} color="#666" />
+          <Text style={styles.tabLabel}>Projects</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.createButton}>
-          <Ionicons name="add" size={24} color="#fff" />
+        <TouchableOpacity style={styles.tabItem}>
+          <View style={styles.createButton}>
+            <Ionicons name="add" size={32} color="#fff" />
+          </View>
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => router.push('/(tabs)/templates')} style={styles.tabItem}>
           <Ionicons name="grid-outline" size={24} color="#666" />
+          <Text style={styles.tabLabel}>Templates</Text>
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => router.push('/(tabs)/pro')} style={styles.tabItem}>
           <Ionicons name="star-outline" size={24} color="#666" />
+          <Text style={styles.tabLabel}>Pro</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -59,12 +66,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    paddingBottom: 8,
+    paddingTop: 8,
   },
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
     height: 60,
+  },
+  tabLabel: {
+    fontSize: 12,
+    marginTop: 4,
+    color: '#666',
   },
   createButton: {
     width: 56,
@@ -73,11 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#8B3DFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    marginTop: -30,
+    ...createElevation(5),
   },
 }); 

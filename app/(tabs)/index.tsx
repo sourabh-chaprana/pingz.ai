@@ -705,4 +705,7 @@ const styles = StyleSheet.create({
     right: -20,
     opacity: 0.85,
   },
+  section: {
+    marginBottom: 24,
+  },
 });

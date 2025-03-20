@@ -102,9 +102,9 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {error && (
+        {/* {error && (
           <ThemedText style={styles.error}>{error}</ThemedText>
-        )}
+        )} */}
 
         <ThemedText style={styles.inputLabel}>Email address</ThemedText>
         <TextInput

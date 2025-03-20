@@ -11,6 +11,12 @@ interface RegisterCredentials {
   name: string;
   email: string;
   password: string;
+  userType?: string;
+}
+
+interface VerifyOtpCredentials {
+  email: string;
+  code: string;
 }
 
 interface LoginResponse {
@@ -43,10 +49,28 @@ export const register = createAsyncThunk<LoginResponse, RegisterCredentials>(
   'auth/register',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await api.post('/user/register', credentials);
+      const response = await api.post('/user/signUp', credentials);
       return response.data;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Something went wrong';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const verifyOtp = createAsyncThunk<any, VerifyOtpCredentials>(
+  'auth/verifyOtp',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      console.log('Verifying OTP with credentials:', credentials);
+      const response = await api.post('/user/signUp/confirm', credentials);
+      console.log('OTP verification response:', response.data);
+      
+      // Simply return success, no token handling
+      return { success: true };
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      const errorMessage = error.response?.data?.message || 'OTP verification failed';
       return rejectWithValue(errorMessage);
     }
   }
