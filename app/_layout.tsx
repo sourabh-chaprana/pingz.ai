@@ -19,6 +19,7 @@ import React from 'react';
 import Toast from 'react-native-toast-message';
 import { ThemedText } from '@/components/ThemedText';
 import { useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -234,6 +235,7 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   const [isAppReady, setIsAppReady] = useState(false);
+  const [isTokenLoaded, setIsTokenLoaded] = useState(false);
   
   // Create the animated scroll value
   const scrollY = React.useRef(new Animated.Value(0)).current;
@@ -262,7 +264,26 @@ export default function RootLayout() {
     }
   }, [isAppReady]);
 
-  if (!loaded || !isAppReady) {
+  useEffect(() => {
+    // Check if token exists on app startup
+    const loadToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('auth_token');
+        
+        // If no token is found, you might want to redirect to login
+        // depending on your app's requirements
+        
+        setIsTokenLoaded(true);
+      } catch (error) {
+        console.error('Failed to load authentication token:', error);
+        setIsTokenLoaded(true);
+      }
+    };
+    
+    loadToken();
+  }, []);
+
+  if (!loaded || !isAppReady || !isTokenLoaded) {
     // Show custom splash screen while loading
     return <CustomSplashScreen />;
   }

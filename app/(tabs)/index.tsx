@@ -5,14 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, useRef, useEffect } from 'react';
 import React from 'react';
 import { useScrollContext } from '@/app/_layout';
+import { useRouter } from 'expo-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTemplatesByCategory } from '@/src/features/template/templateThunks';
+import { RootState } from '@/src/store';
 
 // Add more icons & categories data
 const categoryData = [
-  { id: '1', name: 'Social media', icon: 'heart' },
-  { id: '2', name: 'Video', icon: 'videocam' },
-  { id: '3', name: 'Presentation', icon: 'pie-chart' },
-  { id: '4', name: 'Printables', icon: 'print' },
-  { id: '5', name: 'Documents', icon: 'document-text' },
+  { id: '1', name: 'Featured', icon: 'star', color: '#FFA500' },
+  { id: '2', name: 'eCommerce', icon: 'cart', color: '#00BCD4' },
+  { id: '3', name: 'Marketing', icon: 'chatbubble', color: '#2196F3' },
+  { id: '4', name: 'Events', icon: 'calendar', color: '#9C27B0' },
+  { id: '5', name: 'Holidays', icon: 'gift', color: '#E91E63' },
 ];
 
 // Updated whatsNewData with free images
@@ -237,14 +241,19 @@ function WhatsNewSection() {
 }
 
 // Function for category icons
-function CategoryIcon({ icon, name }: { icon: string; name: string }) {
+function CategoryIcon({ icon, name, color, onPress }: { 
+  icon: string; 
+  name: string; 
+  color: string;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.categoryItem}>
-      <View style={styles.categoryIconContainer}>
+    <TouchableOpacity style={styles.categoryItem} onPress={onPress}>
+      <View style={[styles.categoryIconContainer, { backgroundColor: color }]}>
         <Ionicons name={icon as any} size={24} color="#fff" />
       </View>
       <ThemedText style={styles.categoryName}>{name}</ThemedText>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -283,14 +292,36 @@ function RecentDesignCard({ title, type, imageUrl, color }: {
 }
 
 export default function HomeScreen() {
-  // Get the scroll context
+  // Get the scroll context and navigation
   const { scrollY } = useScrollContext();
+  const router = useRouter();
+  const dispatch = useDispatch();
+  
+  // Check if user is authenticated
+  const isAuthenticated = useSelector(
+    (state: RootState) => Boolean(state.auth.token)
+  );
   
   // Handle scroll events
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     { useNativeDriver: false }
   );
+  
+  // Handle category press with auth check
+  const handleCategoryPress = (categoryName: string) => {
+    if (!isAuthenticated) {
+      // If not authenticated, redirect to login
+      router.replace('/login');
+      return;
+    }
+    
+    // Pre-fetch the data for better UX
+    dispatch(fetchTemplatesByCategory(categoryName));
+    
+    // Navigate to templateCategories with the category name
+    router.push(`/templateCategories?category=${categoryName}`);
+  };
   
   return (
     <ThemedView style={styles.container}>
@@ -314,7 +345,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Categories section */}
+        {/* Categories section with updated onPress handler */}
         <View style={styles.categoriesContainer}>
           <ScrollView 
             horizontal 
@@ -326,6 +357,8 @@ export default function HomeScreen() {
                 key={category.id}
                 icon={category.icon}
                 name={category.name}
+                color={category.color}
+                onPress={() => handleCategoryPress(category.name)}
               />
             ))}
           </ScrollView>
