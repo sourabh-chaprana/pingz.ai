@@ -12,11 +12,24 @@ import { RootState } from '@/src/store';
 
 // Add more icons & categories data
 const categoryData = [
-  { id: '1', name: 'Featured', icon: 'star', color: '#FFA500' },
-  { id: '2', name: 'eCommerce', icon: 'cart', color: '#00BCD4' },
-  { id: '3', name: 'Marketing', icon: 'chatbubble', color: '#2196F3' },
-  { id: '4', name: 'Events', icon: 'calendar', color: '#9C27B0' },
-  { id: '5', name: 'Holidays', icon: 'gift', color: '#E91E63' },
+  { id: '1', name: 'Recommended', icon: 'star', color: '#FF9933' },
+  { id: '2', name: 'eCommerce', icon: 'cart', color: '#00CC99' },
+  { id: '3', name: 'Marketing', icon: 'megaphone', color: '#6699FF' },
+  { id: '4', name: 'Events', icon: 'calendar', color: '#9966CC' },
+  { id: '5', name: 'Holidays', icon: 'gift', color: '#FF6666' },
+  { id: '6', name: 'Anniversary', icon: 'heart', color: '#FF3366' },
+  { id: '7', name: 'Birthday', icon: 'gift', color: '#9933CC' },
+  { id: '8', name: 'Auto_Dealers', icon: 'car', color: '#666666' },
+  { id: '9', name: 'Restaurants', icon: 'restaurant', color: '#FF6600' },
+  { id: '10', name: 'Flirt', icon: 'heart', color: '#FF3366' },
+  { id: '11', name: 'Shayari_Poem', icon: 'leaf', color: '#00CC99' },
+  { id: '12', name: 'Fashion_Style', icon: 'shirt', color: '#3366CC' },
+  { id: '13', name: 'Invitations', icon: 'mail', color: '#3399FF' },
+  // { id: '1', name: 'Featured', icon: 'star', color: '#FFA500' },
+  // { id: '2', name: 'eCommerce', icon: 'cart', color: '#00BCD4' },
+  // { id: '3', name: 'Marketing', icon: 'chatbubble', color: '#2196F3' },
+  // { id: '4', name: 'Events', icon: 'calendar', color: '#9C27B0' },
+  // { id: '5', name: 'Holidays', icon: 'gift', color: '#E91E63' },
 ];
 
 // Updated whatsNewData with free images

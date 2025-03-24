@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { store } from '../store';
 
-export const BASE_URL = 'https://api.evolvpix.whilter.ai';
+export const BASE_URL = 'https://pingz.ai/api/';
 
 export const api = axios.create({
   baseURL: BASE_URL,

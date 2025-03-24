@@ -45,7 +45,10 @@ export default function TemplateCategories() {
   };
   
   const renderTemplateItem = ({ item }: { item: Template }) => (
-    <TouchableOpacity style={styles.templateCard}>
+    <TouchableOpacity 
+      style={styles.templateCard} 
+      onPress={() => router.push(`/template/${item.id}`)}
+    >
       <Image 
         source={{ uri: item.url || 'https://via.placeholder.com/150' }} 
         style={styles.templateImage}
@@ -61,6 +64,23 @@ export default function TemplateCategories() {
             <ThemedText style={styles.premiumText}>Premium</ThemedText>
           </View>
         )}
+      </View>
+      <View style={styles.cardFooter}>
+        <View style={styles.categoryTag}>
+          <ThemedText style={styles.categoryText}>{item.category || category}</ThemedText>
+        </View>
+        <TouchableOpacity 
+          style={styles.useTemplateButton}
+          onPress={() => {
+            console.log('Navigating to template editor with ID:', item.id);
+            router.push({
+              pathname: '/template-editor/[id]',
+              params: { id: item.id }
+            });
+          }}
+        >
+          <ThemedText style={styles.useTemplateText}>Use Template</ThemedText>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -176,6 +196,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    display: 'flex',
+    flexDirection: 'column',
   },
   templateImage: {
     width: '100%',
@@ -184,6 +206,7 @@ const styles = StyleSheet.create({
   },
   templateInfo: {
     padding: 12,
+    flex: 1,
   },
   templateTitle: {
     fontSize: 14,
@@ -224,5 +247,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  categoryTag: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  categoryText: {
+    fontSize: 10,
+    color: '#666',
+  },
+  useTemplateButton: {
+    backgroundColor: '#8B3DFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  useTemplateText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '600',
   },
 }); 

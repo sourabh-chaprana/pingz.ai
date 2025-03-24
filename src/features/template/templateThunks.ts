@@ -1,86 +1,210 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { 
   fetchTemplatesStart, 
   fetchTemplatesSuccess, 
-  fetchTemplatesFailure 
+  fetchTemplatesFailure,
+  fetchTemplateByIdStart,
+  fetchTemplateByIdSuccess,
+  fetchTemplateByIdFailure,
+  generateImageStart,
+  generateImageSuccess,
+  generateImageFailure,
+  fetchMediaStart,
+  fetchMediaSuccess,
+  fetchMediaFailure
 } from './templateSlice';
 import { AppDispatch } from '@/src/store';
 import api from '@/src/services/api';
-// import { AppDispatch } from '../../store/store';
+import Toast from 'react-native-toast-message';
 
-// Base URL for the API
-const API_BASE_URL = 'https://api.evolvpix.whilter.ai';
 
-// Token key in AsyncStorage
-const AUTH_TOKEN_KEY = 'auth_token';
+const IMAGE_API_URL = 'https://pingz.ai/api/render/api/image/overlay-text';
+const TOKEN_KEY = 'token';
+const CORS_PROXY = 'https://corsproxy.io/?';
 
-// Thunk for fetching templates by category
+// Template category
 export const fetchTemplatesByCategory = (categoryName: string) => {
   return async (dispatch: AppDispatch) => {
     try {
-      // Dispatch start action with the category name
       dispatch(fetchTemplatesStart(categoryName));
       
-      // Format category name for API call (lowercase, replace spaces with hyphens)
       const formattedCategory = categoryName.toLowerCase().replace(/\s+/g, '-');
+      const response = await api.get(`/template/event/${formattedCategory}`, {
+        timeout: 30000,
+        headers: {
+          'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
+        }
+      });
       
-      // Make API call using the existing API service
-      const response = await api.get(`/template/event/${formattedCategory}`);
-      
-      // Dispatch success with the data
       dispatch(fetchTemplatesSuccess(response.data));
-      
       return response.data;
     } catch (error) {
+      console.error('Template fetch error:', error);
+      
       let errorMessage = 'Failed to fetch templates';
       
-      if (error.response) {
-        // The request was made and the server responded with an error status
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (error.response) {
         errorMessage = `Error ${error.response.status}: ${error.response.data?.message || 'Server error'}`;
       } else if (error.request) {
-        // The request was made but no response was received
         errorMessage = 'No response from server. Please check your connection.';
       } else if (error instanceof Error) {
-        // Something happened in setting up the request
         errorMessage = error.message;
       }
       
-      // Dispatch failure with error message
+      Toast.show({
+        type: 'error',
+        text1: 'Loading Error',
+        text2: errorMessage,
+        position: 'bottom',
+      });
+      
       dispatch(fetchTemplatesFailure(errorMessage));
       throw error;
     }
   };
 };
 
-// Add a function to refresh the token if needed
-export const refreshAuthToken = async () => {
-  try {
-    // Get refresh token from AsyncStorage
-    const refreshToken = await AsyncStorage.getItem('refresh_token');
-    
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
+// Single template
+export const fetchTemplateById = (templateId: string) => {
+  return async (dispatch: AppDispatch) => {
+    try {
+      dispatch(fetchTemplateByIdStart());
+      
+      const response = await api.get(`/template/${templateId}`);
+      
+      dispatch(fetchTemplateByIdSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      dispatch(fetchTemplateByIdFailure(errorMessage));
+      throw error;
     }
-    
-    // Make refresh token API call (assuming your API has this endpoint)
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-      refreshToken
-    });
-    
-    // Store the new token
-    if (response.data.token) {
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.data.token);
-      return response.data.token;
+  };
+};
+
+// Generate image
+export const generateImage = (currentTemplate: any, templateVariables: any) => {
+  return async (dispatch: AppDispatch) => {
+    try {
+      dispatch(generateImageStart());
+
+      // Prepare text overlays
+      const textOverlays = currentTemplate.templateVariables
+        .filter(variable => variable.name.toLowerCase() !== 'image')
+        .map(variable => ({
+          text: templateVariables[variable.name] || "",
+          width: parseInt(variable.posWidth) || 300,
+          height: parseInt(variable.posHeight) || 150,
+          x: parseInt(variable.x) || 120,
+          y: parseInt(variable.y) || 250,
+          font: variable.font || "Arial",
+          fontFamily: variable.fontFamily || "https://pingz.ai/api/template/fonts/Arial.ttf",
+          fontSize: variable.fontSize || "30",
+          color: variable.color || "#000000"
+        }));
+
+      // Prepare image overlays
+      const imageOverlays = [];
+      const imageVariable = currentTemplate.templateVariables.find(
+        variable => variable.name.toLowerCase() === 'image'
+      );
+
+      if (imageVariable && templateVariables['image']) {
+        imageOverlays.push({
+          imageUrl: templateVariables['image'],
+          width: parseInt(imageVariable.posWidth) || 0,
+          height: parseInt(imageVariable.posHeight) || 0,
+          x: parseInt(imageVariable.x) || 10,
+          y: parseInt(imageVariable.y) || 10
+        });
+      }
+
+      const payload = {
+        imageUrl: currentTemplate.url,
+        mediaType: currentTemplate.mediaType || "image",
+        textOverlays: textOverlays,
+        imageOverlays: imageOverlays
+      };
+
+      console.log('Generate Image Payload:', payload); // For debugging
+
+      // Single API call for all platforms
+      const response = await api.post('render/api/image/overlay-text', payload, {
+        headers: {
+          'Accept': 'image/png;base64',
+          'Content-Type': 'application/json'
+        },
+        responseType: Platform.OS === 'web' ? 'blob' : 'text'
+      });
+
+      let imageUrl;
+      if (Platform.OS === 'web') {
+        imageUrl = URL.createObjectURL(response.data);
+      } else {
+        imageUrl = `data:image/png;base64,${response.data}`;
+      }
+
+      dispatch(generateImageSuccess(imageUrl));
+      return imageUrl;
+
+    } catch (error) {
+      console.error('Generate image error:', error);
+      const errorMessage = getErrorMessage(error);
+      Toast.show({
+        type: 'error',
+        text1: 'Image Generation Failed',
+        text2: errorMessage,
+        position: 'bottom',
+      });
+      dispatch(generateImageFailure(errorMessage));
+      throw error;
     }
-    
-    throw new Error('Failed to refresh token');
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    // Clear tokens if refresh fails
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-    await AsyncStorage.removeItem('refresh_token');
-    throw error;
+  };
+};
+
+// Media library
+export const fetchMediaLibrary = () => {
+  return async (dispatch: AppDispatch) => {
+    try {
+      dispatch(fetchMediaStart());
+      
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await axios({
+        method: 'get',
+        url: 'https://pingz.ai/api/template/api/media',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      dispatch(fetchMediaSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      console.error('Media fetch error:', error);
+      const errorMessage = getErrorMessage(error);
+      dispatch(fetchMediaFailure(errorMessage));
+      throw error;
+    }
+  };
+};
+
+// Helper function to extract error messages
+function getErrorMessage(error) {
+  if (error.response) {
+    return `Error ${error.response.status}: ${error.response.data?.message || 'Server error'}`;
+  } else if (error.request) {
+    return 'No response from server. Please check your connection.';
+  } else if (error instanceof Error) {
+    return error.message;
   }
-}; 
+  return 'An unknown error occurred';
+} 

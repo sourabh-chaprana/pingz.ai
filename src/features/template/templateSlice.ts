@@ -29,17 +29,31 @@ export interface Template {
 // State interface
 interface TemplateState {
   templates: Template[];
+  currentTemplate: Template | null;
   loading: boolean;
   error: string | null;
   currentCategory: string | null;
+  generatedImage: string | null;
+  generatingImage: boolean;
+  generateImageError: string | null;
+  mediaLibrary: Array<any>;
+  loadingMedia: boolean;
+  mediaError: string | null;
 }
 
 // Initial state
 const initialState: TemplateState = {
   templates: [],
+  currentTemplate: null,
   loading: false,
   error: null,
   currentCategory: null,
+  generatedImage: null,
+  generatingImage: false,
+  generateImageError: null,
+  mediaLibrary: [],
+  loadingMedia: false,
+  mediaError: null
 };
 
 // Create template slice
@@ -65,6 +79,51 @@ const templateSlice = createSlice({
       state.templates = [];
       state.currentCategory = null;
     },
+    fetchTemplateByIdStart: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    fetchTemplateByIdSuccess: (state, action: PayloadAction<Template>) => {
+      state.currentTemplate = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
+    fetchTemplateByIdFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+    clearCurrentTemplate: (state) => {
+      state.currentTemplate = null;
+    },
+    generateImageStart: (state) => {
+      state.generatingImage = true;
+      state.generateImageError = null;
+    },
+    generateImageSuccess: (state, action: PayloadAction<string>) => {
+      state.generatedImage = action.payload;
+      state.generatingImage = false;
+      state.generateImageError = null;
+    },
+    generateImageFailure: (state, action: PayloadAction<string>) => {
+      state.generatingImage = false;
+      state.generateImageError = action.payload;
+    },
+    clearGeneratedImage: (state) => {
+      state.generatedImage = null;
+    },
+    fetchMediaStart: (state) => {
+      state.loadingMedia = true;
+      state.mediaError = null;
+    },
+    fetchMediaSuccess: (state, action: PayloadAction<any[]>) => {
+      state.mediaLibrary = action.payload;
+      state.loadingMedia = false;
+      state.mediaError = null;
+    },
+    fetchMediaFailure: (state, action: PayloadAction<string>) => {
+      state.loadingMedia = false;
+      state.mediaError = action.payload;
+    }
   },
 });
 
@@ -72,7 +131,18 @@ export const {
   fetchTemplatesStart, 
   fetchTemplatesSuccess, 
   fetchTemplatesFailure,
-  clearTemplates
+  clearTemplates,
+  fetchTemplateByIdStart,
+  fetchTemplateByIdSuccess,
+  fetchTemplateByIdFailure,
+  clearCurrentTemplate,
+  generateImageStart,
+  generateImageSuccess,
+  generateImageFailure,
+  clearGeneratedImage,
+  fetchMediaStart,
+  fetchMediaSuccess,
+  fetchMediaFailure
 } = templateSlice.actions;
 
 export default templateSlice.reducer;
