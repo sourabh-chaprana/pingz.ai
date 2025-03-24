@@ -30,13 +30,16 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import api from '@/src/services/api';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 
 export default function TemplateEditor() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const dispatch = useDispatch();
   const templateId = params.id as string;
-
+  
   // Redux state
   const { 
     currentTemplate, 
@@ -55,7 +58,7 @@ export default function TemplateEditor() {
   const [templateVariables, setTemplateVariables] = useState<{[key: string]: string}>({});
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
-
+  
   // Initial data fetching
   useEffect(() => {
     dispatch(fetchTemplateById(templateId));
@@ -63,7 +66,7 @@ export default function TemplateEditor() {
       dispatch(fetchTemplatesByCategory(currentTemplate.event));
     }
   }, [templateId, dispatch]);
-
+  
   // Reset form when template changes
   useEffect(() => {
     if (currentTemplate && currentTemplate.templateVariables) {
@@ -234,6 +237,161 @@ export default function TemplateEditor() {
       });
   };
 
+  const handleDownload = async () => {
+    if (!generatedImage) {
+      Toast.show({
+        type: 'error',
+        text1: 'No Image',
+        text2: 'Please generate an image first',
+        position: 'bottom',
+      });
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'web') {
+        // For web, fetch the image first and create a blob URL
+        const response = await fetch(generatedImage);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `pingz_${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl); // Clean up the blob URL
+      } else {
+        // For mobile platforms
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Toast.show({
+            type: 'error',
+            text1: 'Permission Denied',
+            text2: 'Please allow access to save images',
+            position: 'bottom',
+          });
+          return;
+        }
+
+        // Download the image first
+        const filename = `pingz_${Date.now()}.png`;
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+        
+        const downloadResult = await FileSystem.downloadAsync(
+          generatedImage,
+          fileUri
+        );
+
+        if (downloadResult.status !== 200) {
+          throw new Error('Failed to download image');
+        }
+
+        // Save to media library
+        const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+        await MediaLibrary.createAlbumAsync('Pingz', asset, false);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Image saved to gallery',
+          position: 'bottom',
+        });
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Download Failed',
+        text2: 'Failed to save image',
+        position: 'bottom',
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    if (!generatedImage) {
+      Toast.show({
+        type: 'error',
+        text1: 'No Image',
+        text2: 'Please generate an image first',
+        position: 'bottom',
+      });
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'web') {
+        // For web platforms
+        if (navigator.share) {
+          try {
+            // Fetch the image and create a file
+            const response = await fetch(generatedImage);
+            const blob = await response.blob();
+            const file = new File([blob], 'image.png', { type: 'image/png' });
+
+            await navigator.share({
+              title: 'Share Image',
+              text: 'Check out this image!',
+              files: [file]
+            });
+          } catch (shareError) {
+            // Fallback if file sharing fails
+            await navigator.share({
+              title: 'Share Image',
+              text: 'Check out this image!',
+              url: generatedImage
+            });
+          }
+        } else {
+          // Fallback for browsers that don't support sharing
+          window.open(generatedImage, '_blank');
+        }
+      } else {
+        // For mobile platforms
+        const filename = `pingz_${Date.now()}.png`;
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+        // Download the image first
+        const downloadResult = await FileSystem.downloadAsync(
+          generatedImage,
+          fileUri
+        );
+
+        if (downloadResult.status !== 200) {
+          throw new Error('Failed to download image');
+        }
+
+        // Check if sharing is available
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (!isAvailable) {
+          Toast.show({
+            type: 'error',
+            text1: 'Sharing Unavailable',
+            text2: 'Sharing is not available on this device',
+            position: 'bottom',
+          });
+          return;
+        }
+
+        // Share the local file
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share Image'
+        });
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Share Failed',
+        text2: 'Failed to share image',
+        position: 'bottom',
+      });
+    }
+  };
+
   // Loading and error states
   if (loading) {
     return (
@@ -243,7 +401,7 @@ export default function TemplateEditor() {
       </View>
     );
   }
-
+  
   if (error || !currentTemplate) {
     return (
       <View style={styles.centerContainer}>
@@ -260,7 +418,7 @@ export default function TemplateEditor() {
       </View>
     );
   }
-
+  
   // Main render
   return (
     <ThemedView style={styles.container}>
@@ -307,10 +465,10 @@ export default function TemplateEditor() {
           <ThemedText style={styles.formTitle}>Customize Template</ThemedText>
           
           {currentTemplate.templateVariables?.map((variable, index) => (
-            <View key={index} style={styles.formGroup}>
+              <View key={index} style={styles.formGroup}>
               <ThemedText style={styles.formLabel}>{variable.name}</ThemedText>
               {renderImageField(variable.name)}
-            </View>
+              </View>
           ))}
           
           <TouchableOpacity 
@@ -322,42 +480,64 @@ export default function TemplateEditor() {
 
           {/* Action Icons */}
           <View style={styles.actionIcons}>
-            <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Save')}>
-              <Ionicons name="download-outline" size={24} color="#8B3DFF" />
+            <TouchableOpacity 
+              style={[
+                styles.iconButton,
+                !generatedImage && styles.iconButtonDisabled
+              ]} 
+              onPress={handleDownload}
+              disabled={!generatedImage}
+            >
+              <Ionicons 
+                name="download-outline" 
+                size={24} 
+                color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
+              />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Share')}>
-              <Ionicons name="share-social-outline" size={24} color="#8B3DFF" />
+            <TouchableOpacity 
+              style={[
+                styles.iconButton,
+                !generatedImage && styles.iconButtonDisabled
+              ]} 
+              onPress={handleShare}
+              disabled={!generatedImage}
+            >
+              <Ionicons 
+                name="share-social-outline" 
+                size={24} 
+                color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
+              />
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Bulk')}>
               <Ionicons name="copy-outline" size={24} color="#8B3DFF" />
             </TouchableOpacity>
           </View>
-        </View>
-
+      </View>
+      
         {/* Similar Templates Section */}
-        <View style={styles.templatesScrollContainer}>
+      <View style={styles.templatesScrollContainer}>
           <ThemedText style={styles.similarTemplatesTitle}>Similar Templates</ThemedText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {templates.map((template) => (
-              <TouchableOpacity 
-                key={template.id} 
-                style={[
-                  styles.scrollTemplate,
-                  template.id === templateId && styles.selectedScrollTemplate
-                ]}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {templates.map((template) => (
+            <TouchableOpacity 
+              key={template.id} 
+              style={[
+                styles.scrollTemplate,
+                template.id === templateId && styles.selectedScrollTemplate
+              ]}
                 onPress={() => router.replace(`/template-editor/${template.id}`)}
-              >
-                <Image
-                  source={{ uri: template.url || 'https://via.placeholder.com/150' }}
-                  style={styles.scrollTemplateImage}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+            >
+              <Image
+                source={{ uri: template.url || 'https://via.placeholder.com/150' }}
+                style={styles.scrollTemplateImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
       </ScrollView>
       
       {renderMediaLibrary()}
@@ -674,5 +854,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  iconButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+    shadowOpacity: 0,
+    elevation: 0,
   },
 }); 

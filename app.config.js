@@ -13,12 +13,31 @@ export default {
             "usesCleartextTraffic": true
           }
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          photosPermission: "Allow $(PRODUCT_NAME) to access your photos.",
+          savePhotosPermission: "Allow $(PRODUCT_NAME) to save photos.",
+          isAccessMediaLocationEnabled: true
+        }
       ]
     ],
     android: {
-      permissions: ["INTERNET"],
+      permissions: ["INTERNET", "CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "MEDIA_LIBRARY"],
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#FFFFFF"
+      }
+    },
+    ios: {
+      supportsTablet: true,
+      infoPlist: {
+        NSPhotoLibraryUsageDescription: "Allow $(PRODUCT_NAME) to access your photos.",
+        NSPhotoLibraryAddUsageDescription: "Allow $(PRODUCT_NAME) to save photos."
+      }
     },
     extra: {
       // Disable TLS/SSL certificate validation in development
