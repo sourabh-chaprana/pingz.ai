@@ -319,49 +319,46 @@ export default function TemplateEditor() {
           >
             <ThemedText style={styles.generateButtonText}>Generate Image</ThemedText>
           </TouchableOpacity>
+
+          {/* Action Icons */}
+          <View style={styles.actionIcons}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Save')}>
+              <Ionicons name="download-outline" size={24} color="#8B3DFF" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Share')}>
+              <Ionicons name="share-social-outline" size={24} color="#8B3DFF" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Bulk')}>
+              <Ionicons name="copy-outline" size={24} color="#8B3DFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Similar Templates Section */}
+        <View style={styles.templatesScrollContainer}>
+          <ThemedText style={styles.similarTemplatesTitle}>Similar Templates</ThemedText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {templates.map((template) => (
+              <TouchableOpacity 
+                key={template.id} 
+                style={[
+                  styles.scrollTemplate,
+                  template.id === templateId && styles.selectedScrollTemplate
+                ]}
+                onPress={() => router.replace(`/template-editor/${template.id}`)}
+              >
+                <Image
+                  source={{ uri: template.url || 'https://via.placeholder.com/150' }}
+                  style={styles.scrollTemplateImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       </ScrollView>
-      
-      {/* Action Bar */}
-      <View style={styles.actionBar}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => console.log('Save')}>
-          <Ionicons name="download-outline" size={24} color="#FFF" />
-          <ThemedText style={styles.actionButtonText}>Save</ThemedText>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionButton} onPress={() => console.log('Share')}>
-          <Ionicons name="logo-whatsapp" size={24} color="#FFF" />
-          <ThemedText style={styles.actionButtonText}>Share</ThemedText>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionButton} onPress={() => console.log('Bulk')}>
-          <Ionicons name="cloud-upload-outline" size={24} color="#FFF" />
-          <ThemedText style={styles.actionButtonText}>Bulk</ThemedText>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Bottom Scrollable Templates */}
-      <View style={styles.templatesScrollContainer}>
-        <ThemedText style={styles.similarTemplatesTitle}>Similar Templates</ThemedText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {templates.map((template) => (
-            <TouchableOpacity 
-              key={template.id} 
-              style={[
-                styles.scrollTemplate,
-                template.id === templateId && styles.selectedScrollTemplate
-              ]}
-              onPress={() => router.replace(`/template-editor/${template.id}`)}
-            >
-              <Image
-                source={{ uri: template.url || 'https://via.placeholder.com/150' }}
-                style={styles.scrollTemplateImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
       
       {renderMediaLibrary()}
     </ThemedView>
@@ -476,29 +473,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-  },
-  actionBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e4e8',
-  },
-  actionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#8B3DFF',
-    width: 90,
-    height: 40,
-    borderRadius: 20,
-    flexDirection: 'row',
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    marginLeft: 4,
-    fontWeight: '500',
   },
   templatesScrollContainer: {
     backgroundColor: '#fff',
@@ -683,5 +657,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  actionIcons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 24,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
 }); 

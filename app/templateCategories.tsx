@@ -45,29 +45,28 @@ export default function TemplateCategories() {
   };
   
   const renderTemplateItem = ({ item }: { item: Template }) => (
-    <TouchableOpacity 
-      style={styles.templateCard} 
-      onPress={() => router.push(`/template/${item.id}`)}
-    >
-      <Image 
-        source={{ uri: item.url || 'https://via.placeholder.com/150' }} 
-        style={styles.templateImage}
-        resizeMode="cover"
-      />
-      <View style={styles.templateInfo}>
-        <ThemedText style={styles.templateTitle}>{item.templateName}</ThemedText>
-        {item.description && (
-          <ThemedText style={styles.templateDescription}>{item.description}</ThemedText>
-        )}
+    <View style={styles.templateCard}>
+      <View style={styles.templateImageContainer}>
+        <Image 
+          source={{ uri: item.url || 'https://via.placeholder.com/150' }} 
+          style={styles.templateImage}
+          resizeMode="cover"
+        />
         {item.premium && (
           <View style={styles.premiumBadge}>
             <ThemedText style={styles.premiumText}>Premium</ThemedText>
           </View>
         )}
       </View>
-      <View style={styles.cardFooter}>
-        <View style={styles.categoryTag}>
-          <ThemedText style={styles.categoryText}>{item.category || category}</ThemedText>
+      <View style={styles.templateContent}>
+        <View style={styles.templateInfo}>
+          <ThemedText style={styles.templateTitle}>{item.templateName}</ThemedText>
+          {item.description && (
+            <ThemedText style={styles.templateDescription}>{item.description}</ThemedText>
+          )}
+          <View style={styles.categoryTag}>
+            <ThemedText style={styles.categoryText}>{item.category || category}</ThemedText>
+          </View>
         </View>
         <TouchableOpacity 
           style={styles.useTemplateButton}
@@ -82,7 +81,7 @@ export default function TemplateCategories() {
           <ThemedText style={styles.useTemplateText}>Use Template</ThemedText>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
   
   // If not authenticated, don't render anything (redirection happens in useEffect)
@@ -130,10 +129,8 @@ export default function TemplateCategories() {
           data={templates}
           renderItem={renderTemplateItem}
           keyExtractor={(item) => item.id}
-          numColumns={2}
           contentContainerStyle={styles.templateGrid}
           showsVerticalScrollIndicator={false}
-          columnWrapperStyle={styles.templateRow}
         />
       )}
     </ThemedView>
@@ -180,13 +177,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   templateGrid: {
-    padding: 12,
-  },
-  templateRow: {
-    justifyContent: 'space-between',
+    padding: 16,
   },
   templateCard: {
-    width: '48%',
+    width: '100%',
     marginBottom: 16,
     borderRadius: 12,
     overflow: 'hidden',
@@ -194,42 +188,60 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    display: 'flex',
-    flexDirection: 'column',
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  templateImageContainer: {
+    width: '100%',
+    height: 200,
+    position: 'relative',
   },
   templateImage: {
     width: '100%',
-    height: 160,
-    backgroundColor: '#f5f5f5',
+    height: '100%',
+  },
+  templateContent: {
+    padding: 16,
   },
   templateInfo: {
-    padding: 12,
-    flex: 1,
+    marginBottom: 16,
   },
   templateTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 8,
   },
   templateDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  categoryTag: {
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  categoryText: {
     fontSize: 12,
     color: '#666',
-    marginTop: 4,
+    fontWeight: '500',
   },
   premiumBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FFC107',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    top: 12,
+    right: 12,
+    backgroundColor: '#FFB800',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
   },
   premiumText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   loadingText: {
     marginTop: 16,
@@ -248,34 +260,21 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
   },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  categoryTag: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  categoryText: {
-    fontSize: 10,
-    color: '#666',
-  },
   useTemplateButton: {
     backgroundColor: '#8B3DFF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    elevation: 2,
+    shadowColor: '#8B3DFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   useTemplateText: {
-    fontSize: 10,
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
   },
 }); 
