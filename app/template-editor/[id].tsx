@@ -249,58 +249,81 @@ export default function TemplateEditor() {
     }
 
     try {
-      // For mobile platforms
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
+      if (Platform.OS === 'web') {
+        // For web browsers
+        const response = await fetch(generatedImage);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `pingz_${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        
         Toast.show({
-          type: 'error',
-          text1: 'Permission Denied',
-          text2: 'Please allow access to save images',
+          type: 'success',
+          text1: 'Success',
+          text2: 'Image downloaded successfully',
           position: 'bottom',
         });
-        return;
-      }
-
-      // Check if the URL starts with 'data:'
-      if (generatedImage.startsWith('data:')) {
-        // For data URLs, we need to first create a local file
-        const base64Data = generatedImage.split(',')[1];
-        const filename = `${FileSystem.documentDirectory}temp_${Date.now()}.png`;
-        await FileSystem.writeAsStringAsync(filename, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        
-        // Save to media library from the local file
-        const asset = await MediaLibrary.createAssetAsync(filename);
-        await MediaLibrary.createAlbumAsync('Pingz', asset, false);
-        
-        // Clean up the temporary file
-        await FileSystem.deleteAsync(filename);
       } else {
-        // For regular URLs, proceed with downloading
+        // For mobile platforms (iOS and Android)
         const filename = `pingz_${Date.now()}.png`;
-        const fileUri = `${FileSystem.documentDirectory}${filename}`;
-        
-        const downloadResult = await FileSystem.downloadAsync(
-          generatedImage,
-          fileUri
-        );
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
-        if (downloadResult.status !== 200) {
-          throw new Error('Failed to download image');
+        if (generatedImage.startsWith('data:')) {
+          // Handle data URLs
+          const base64Data = generatedImage.split(',')[1];
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        } else {
+          // Handle regular URLs
+          const downloadResult = await FileSystem.downloadAsync(
+            generatedImage,
+            fileUri
+          );
+
+          if (downloadResult.status !== 200) {
+            throw new Error('Failed to download image');
+          }
         }
 
-        // Save to media library
-        const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-        await MediaLibrary.createAlbumAsync('Pingz', asset, false);
-      }
+        // Check if sharing is available
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          // Open share dialog which allows saving to device
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Save Image',
+            UTI: 'public.png' // for iOS
+          });
 
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Image saved to gallery',
-        position: 'bottom',
-      });
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Use the share menu to save the image',
+            position: 'bottom',
+          });
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Sharing is not available on this device',
+            position: 'bottom',
+          });
+        }
+
+        // Clean up the temporary file
+        try {
+          await FileSystem.deleteAsync(fileUri);
+        } catch (cleanupError) {
+          console.error('Error cleaning up temp file:', cleanupError);
+        }
+      }
     } catch (error) {
       console.error('Download error:', error);
       Toast.show({
