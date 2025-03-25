@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, TouchableOpacity, View, Image, Modal, Dimensions, Animated } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Image, Modal, Dimensions, Animated, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,30 +7,30 @@ import React from 'react';
 import { useScrollContext } from '@/app/_layout';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTemplatesByCategory } from '@/src/features/template/templateThunks';
+import { fetchTemplatesByCategory, fetchCategories } from '@/src/features/template/templateThunks';
 import { RootState } from '@/src/store';
 
 // Add more icons & categories data
-const categoryData = [
-  { id: '1', name: 'Recommended', icon: 'star', color: '#FF9933' },
-  { id: '2', name: 'eCommerce', icon: 'cart', color: '#00CC99' },
-  { id: '3', name: 'Marketing', icon: 'megaphone', color: '#6699FF' },
-  { id: '4', name: 'Events', icon: 'calendar', color: '#9966CC' },
-  { id: '5', name: 'Holidays', icon: 'gift', color: '#FF6666' },
-  { id: '6', name: 'Anniversary', icon: 'heart', color: '#FF3366' },
-  { id: '7', name: 'Birthday', icon: 'gift', color: '#9933CC' },
-  { id: '8', name: 'Auto_Dealers', icon: 'car', color: '#666666' },
-  { id: '9', name: 'Restaurants', icon: 'restaurant', color: '#FF6600' },
-  { id: '10', name: 'Flirt', icon: 'heart', color: '#FF3366' },
-  { id: '11', name: 'Shayari_Poem', icon: 'leaf', color: '#00CC99' },
-  { id: '12', name: 'Fashion_Style', icon: 'shirt', color: '#3366CC' },
-  { id: '13', name: 'Invitations', icon: 'mail', color: '#3399FF' },
-  // { id: '1', name: 'Featured', icon: 'star', color: '#FFA500' },
-  // { id: '2', name: 'eCommerce', icon: 'cart', color: '#00BCD4' },
-  // { id: '3', name: 'Marketing', icon: 'chatbubble', color: '#2196F3' },
-  // { id: '4', name: 'Events', icon: 'calendar', color: '#9C27B0' },
-  // { id: '5', name: 'Holidays', icon: 'gift', color: '#E91E63' },
-];
+// const categoryData = [
+//   { id: '1', name: 'Recommended', icon: 'star', color: '#FF9933' },
+//   { id: '2', name: 'eCommerce', icon: 'cart', color: '#00CC99' },
+//   { id: '3', name: 'Marketing', icon: 'megaphone', color: '#6699FF' },
+//   { id: '4', name: 'Events', icon: 'calendar', color: '#9966CC' },
+//   { id: '5', name: 'Holidays', icon: 'gift', color: '#FF6666' },
+//   { id: '6', name: 'Anniversary', icon: 'heart', color: '#FF3366' },
+//   { id: '7', name: 'Birthday', icon: 'gift', color: '#9933CC' },
+//   { id: '8', name: 'Auto_Dealers', icon: 'car', color: '#666666' },
+//   { id: '9', name: 'Restaurants', icon: 'restaurant', color: '#FF6600' },
+//   { id: '10', name: 'Flirt', icon: 'heart', color: '#FF3366' },
+//   { id: '11', name: 'Shayari_Poem', icon: 'leaf', color: '#00CC99' },
+//   { id: '12', name: 'Fashion_Style', icon: 'shirt', color: '#3366CC' },
+//   { id: '13', name: 'Invitations', icon: 'mail', color: '#3399FF' },
+//   // { id: '1', name: 'Featured', icon: 'star', color: '#FFA500' },
+//   // { id: '2', name: 'eCommerce', icon: 'cart', color: '#00BCD4' },
+//   // { id: '3', name: 'Marketing', icon: 'chatbubble', color: '#2196F3' },
+//   // { id: '4', name: 'Events', icon: 'calendar', color: '#9C27B0' },
+//   // { id: '5', name: 'Holidays', icon: 'gift', color: '#E91E63' },
+// ];
 
 // Updated whatsNewData with free images
 const whatsNewData = [
@@ -336,6 +336,16 @@ export default function HomeScreen() {
     router.push(`/templateCategories?category=${categoryName}`);
   };
   
+  const { 
+    categories, 
+    loadingCategories, 
+    categoriesError 
+  } = useSelector((state: RootState) => state.templates);
+
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
   return (
     <ThemedView style={styles.container}>
       <Animated.ScrollView 
@@ -360,21 +370,27 @@ export default function HomeScreen() {
 
         {/* Categories section with updated onPress handler */}
         <View style={styles.categoriesContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesScrollContent}
-          >
-            {categoryData.map((category) => (
-              <CategoryIcon
-                key={category.id}
-                icon={category.icon}
-                name={category.name}
-                color={category.color}
-                onPress={() => handleCategoryPress(category.name)}
-              />
-            ))}
-          </ScrollView>
+          {loadingCategories ? (
+            <ActivityIndicator size="large" color="#8B3DFF" />
+          ) : categoriesError ? (
+            <ThemedText style={styles.errorText}>{categoriesError}</ThemedText>
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesScrollContent}
+            >
+              {categories.map((category) => (
+                <CategoryIcon
+                  key={category.id}
+                  icon={category.icon}
+                  name={category.name}
+                  color={category.color}
+                  onPress={() => handleCategoryPress(category.name)}
+                />
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         {/* AI Features section - now scrollable */}
@@ -753,5 +769,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

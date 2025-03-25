@@ -13,7 +13,11 @@ import {
   generateImageFailure,
   fetchMediaStart,
   fetchMediaSuccess,
-  fetchMediaFailure
+  fetchMediaFailure,
+  fetchCategoriesStart,
+  fetchCategoriesSuccess,
+  fetchCategoriesFailure,
+  CategoryResponse
 } from './templateSlice';
 import { AppDispatch } from '@/src/store';
 import api from '@/src/services/api';
@@ -23,6 +27,30 @@ import Toast from 'react-native-toast-message';
 const IMAGE_API_URL = 'https://pingz.ai/api/render/api/image/overlay-text';
 const TOKEN_KEY = 'token';
 const CORS_PROXY = 'https://corsproxy.io/?';
+
+// Icon mapping object for categories
+const categoryIconMap: Record<string, { icon: string; color: string }> = {
+  recommended: { icon: 'star', color: '#FF9933' },
+  ecommerce: { icon: 'cart', color: '#00CC99' },
+  marketing: { icon: 'megaphone', color: '#6699FF' },
+  events: { icon: 'calendar', color: '#9966CC' },
+  holidays: { icon: 'gift', color: '#FF6666' },
+  anniversary: { icon: 'heart', color: '#FF3366' },
+  birthday: { icon: 'gift', color: '#9933CC' },
+  auto_dealers: { icon: 'car', color: '#666666' },
+  restaurants: { icon: 'restaurant', color: '#FF6600' },
+  flirt: { icon: 'heart', color: '#FF3366' },
+  shayari_poem: { icon: 'leaf', color: '#00CC99' },
+  fashion_style: { icon: 'shirt', color: '#3366CC' },
+  invitations: { icon: 'mail', color: '#3399FF' },
+  default: { icon: 'apps', color: '#999999' }
+};
+
+// Helper function to get icon data
+const getCategoryIconData = (categoryName: string) => {
+  const normalizedName = categoryName.toLowerCase().replace(/[_\s]+/g, '_');
+  return categoryIconMap[normalizedName] || categoryIconMap.default;
+};
 
 // Template category
 export const fetchTemplatesByCategory = (categoryName: string) => {
@@ -204,6 +232,49 @@ export const fetchMediaLibrary = () => {
       console.error('Media fetch error:', error);
       const errorMessage = getErrorMessage(error);
       dispatch(fetchMediaFailure(errorMessage));
+      throw error;
+    }
+  };
+};
+
+// Add this to your existing thunks
+export const fetchCategories = () => {
+  return async (dispatch: AppDispatch) => {
+    try {
+      dispatch(fetchCategoriesStart());
+      
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await api.get('/template/event', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Transform the API response to include icons and colors
+      const categoriesWithIcons = response.data.map((category: CategoryResponse) => ({
+        ...category,
+        ...getCategoryIconData(category.name)
+      }));
+
+      dispatch(fetchCategoriesSuccess(categoriesWithIcons));
+      return categoriesWithIcons;
+
+    } catch (error) {
+      console.error('Categories fetch error:', error);
+      const errorMessage = getErrorMessage(error);
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Loading Error',
+        text2: errorMessage,
+        position: 'bottom',
+      });
+      
+      dispatch(fetchCategoriesFailure(errorMessage));
       throw error;
     }
   };

@@ -26,6 +26,18 @@ export interface Template {
   premium: boolean;
 }
 
+// Update the Category interface to match API response
+export interface CategoryResponse {
+  id: string;
+  name: string;
+}
+
+// Add icon and color to the final Category interface
+export interface Category extends CategoryResponse {
+  icon: string;
+  color: string;
+}
+
 // State interface
 interface TemplateState {
   templates: Template[];
@@ -39,6 +51,9 @@ interface TemplateState {
   mediaLibrary: Array<any>;
   loadingMedia: boolean;
   mediaError: string | null;
+  categories: Category[];
+  loadingCategories: boolean;
+  categoriesError: string | null;
 }
 
 // Initial state
@@ -53,7 +68,10 @@ const initialState: TemplateState = {
   generateImageError: null,
   mediaLibrary: [],
   loadingMedia: false,
-  mediaError: null
+  mediaError: null,
+  categories: [],
+  loadingCategories: false,
+  categoriesError: null,
 };
 
 // Create template slice
@@ -123,6 +141,19 @@ const templateSlice = createSlice({
     fetchMediaFailure: (state, action: PayloadAction<string>) => {
       state.loadingMedia = false;
       state.mediaError = action.payload;
+    },
+    fetchCategoriesStart: (state) => {
+      state.loadingCategories = true;
+      state.categoriesError = null;
+    },
+    fetchCategoriesSuccess: (state, action: PayloadAction<Category[]>) => {
+      state.categories = action.payload;
+      state.loadingCategories = false;
+      state.categoriesError = null;
+    },
+    fetchCategoriesFailure: (state, action: PayloadAction<string>) => {
+      state.loadingCategories = false;
+      state.categoriesError = action.payload;
     }
   },
 });
@@ -142,7 +173,10 @@ export const {
   clearGeneratedImage,
   fetchMediaStart,
   fetchMediaSuccess,
-  fetchMediaFailure
+  fetchMediaFailure,
+  fetchCategoriesStart,
+  fetchCategoriesSuccess,
+  fetchCategoriesFailure
 } = templateSlice.actions;
 
 export default templateSlice.reducer;

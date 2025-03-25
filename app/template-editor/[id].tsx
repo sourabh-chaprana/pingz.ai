@@ -96,7 +96,7 @@ export default function TemplateEditor() {
   const handleImageSelect = (imageUrl: string) => {
     setSelectedImage(imageUrl);
     // Make sure to include any position data from the template variable
-    const imageVariable = currentTemplate.templateVariables.find(
+    const imageVariable = currentTemplate?.templateVariables.find(
       variable => variable.name.toLowerCase() === 'image'
     );
     
@@ -566,7 +566,7 @@ export default function TemplateEditor() {
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Bulk')}>
-              <Ionicons name="copy-outline" size={24} color="#8B3DFF" />
+              <Ionicons name="albums-outline" size={24} color="#8B3DFF" />
             </TouchableOpacity>
           </View>
       </View>
