@@ -130,26 +130,38 @@ export const generateImage = (currentTemplate: any, templateVariables: any) => {
         imageOverlays: imageOverlays
       };
 
-      console.log('Generate Image Payload:', payload); // For debugging
-
-      // Single API call for all platforms
-      const response = await api.post('render/api/image/overlay-text', payload, {
-        headers: {
-          'Accept': 'image/png;base64',
-          'Content-Type': 'application/json'
-        },
-        responseType: Platform.OS === 'web' ? 'blob' : 'text'
-      });
-
-      let imageUrl;
+      // Different handling for web and mobile platforms
       if (Platform.OS === 'web') {
-        imageUrl = URL.createObjectURL(response.data);
+        const response = await api.post('render/api/image/overlay-text', payload, {
+          headers: {
+            'Accept': 'image/png;base64',
+            'Content-Type': 'application/json'
+          },
+          responseType: 'blob'
+        });
+        const imageUrl = URL.createObjectURL(response.data);
+        dispatch(generateImageSuccess(imageUrl));
+        return imageUrl;
       } else {
-        imageUrl = `data:image/png;base64,${response.data}`;
-      }
+        // For mobile platforms, request base64 data
+        const response = await api.post('render/api/image/overlay-text', payload, {
+          headers: {
+            'Accept': 'image/png;base64',
+            'Content-Type': 'application/json'
+          },
+          responseType: 'arraybuffer'  // Changed from 'text' to 'arraybuffer'
+        });
 
-      dispatch(generateImageSuccess(imageUrl));
-      return imageUrl;
+        // Convert array buffer to base64
+        const bytes = new Uint8Array(response.data);
+        let binary = '';
+        bytes.forEach(byte => binary += String.fromCharCode(byte));
+        const base64Data = btoa(binary);
+        
+        const imageUrl = `data:image/png;base64,${base64Data}`;
+        dispatch(generateImageSuccess(imageUrl));
+        return imageUrl;
+      }
 
     } catch (error) {
       console.error('Generate image error:', error);
