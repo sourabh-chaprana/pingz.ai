@@ -249,33 +249,35 @@ export default function TemplateEditor() {
     }
 
     try {
-      if (Platform.OS === 'web') {
-        // For web, fetch the image first and create a blob URL
-        const response = await fetch(generatedImage);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = `pingz_${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl); // Clean up the blob URL
-      } else {
-        // For mobile platforms
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Toast.show({
-            type: 'error',
-            text1: 'Permission Denied',
-            text2: 'Please allow access to save images',
-            position: 'bottom',
-          });
-          return;
-        }
+      // For mobile platforms
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({
+          type: 'error',
+          text1: 'Permission Denied',
+          text2: 'Please allow access to save images',
+          position: 'bottom',
+        });
+        return;
+      }
 
-        // Download the image first
+      // Check if the URL starts with 'data:'
+      if (generatedImage.startsWith('data:')) {
+        // For data URLs, we need to first create a local file
+        const base64Data = generatedImage.split(',')[1];
+        const filename = `${FileSystem.documentDirectory}temp_${Date.now()}.png`;
+        await FileSystem.writeAsStringAsync(filename, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        // Save to media library from the local file
+        const asset = await MediaLibrary.createAssetAsync(filename);
+        await MediaLibrary.createAlbumAsync('Pingz', asset, false);
+        
+        // Clean up the temporary file
+        await FileSystem.deleteAsync(filename);
+      } else {
+        // For regular URLs, proceed with downloading
         const filename = `pingz_${Date.now()}.png`;
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
         
@@ -291,14 +293,14 @@ export default function TemplateEditor() {
         // Save to media library
         const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
         await MediaLibrary.createAlbumAsync('Pingz', asset, false);
-
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Image saved to gallery',
-          position: 'bottom',
-        });
       }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Image saved to gallery',
+        position: 'bottom',
+      });
     } catch (error) {
       console.error('Download error:', error);
       Toast.show({
@@ -322,45 +324,34 @@ export default function TemplateEditor() {
     }
 
     try {
-      if (Platform.OS === 'web') {
-        // For web platforms
-        if (navigator.share) {
-          try {
-            // Fetch the image and create a file
-            const response = await fetch(generatedImage);
-            const blob = await response.blob();
-            const file = new File([blob], 'image.png', { type: 'image/png' });
-
-            await navigator.share({
-              title: 'Share Image',
-              text: 'Check out this image!',
-              files: [file]
-            });
-          } catch (shareError) {
-            // Fallback if file sharing fails
-            await navigator.share({
-              title: 'Share Image',
-              text: 'Check out this image!',
-              url: generatedImage
-            });
-          }
+      // For mobile platforms
+      if (Platform.OS !== 'web') {
+        let fileUri;
+        
+        // Handle data URLs
+        if (generatedImage.startsWith('data:')) {
+          // Create a temporary file from the data URL
+          const base64Data = generatedImage.split(',')[1];
+          const tempFilename = `${FileSystem.cacheDirectory}temp_share_${Date.now()}.png`;
+          await FileSystem.writeAsStringAsync(tempFilename, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          fileUri = tempFilename;
         } else {
-          // Fallback for browsers that don't support sharing
-          window.open(generatedImage, '_blank');
-        }
-      } else {
-        // For mobile platforms
-        const filename = `pingz_${Date.now()}.png`;
-        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+          // Handle regular URLs
+          const filename = `pingz_${Date.now()}.png`;
+          const downloadUri = `${FileSystem.cacheDirectory}${filename}`;
+          
+          const downloadResult = await FileSystem.downloadAsync(
+            generatedImage,
+            downloadUri
+          );
 
-        // Download the image first
-        const downloadResult = await FileSystem.downloadAsync(
-          generatedImage,
-          fileUri
-        );
-
-        if (downloadResult.status !== 200) {
-          throw new Error('Failed to download image');
+          if (downloadResult.status !== 200) {
+            throw new Error('Failed to download image');
+          }
+          
+          fileUri = downloadResult.uri;
         }
 
         // Check if sharing is available
@@ -376,10 +367,51 @@ export default function TemplateEditor() {
         }
 
         // Share the local file
-        await Sharing.shareAsync(downloadResult.uri, {
+        await Sharing.shareAsync(fileUri, {
           mimeType: 'image/png',
-          dialogTitle: 'Share Image'
+          dialogTitle: 'Share Image',
+          UTI: 'public.png' // This helps on iOS
         });
+
+        // Clean up temporary file
+        if (fileUri.includes('temp_share_')) {
+          try {
+            await FileSystem.deleteAsync(fileUri);
+          } catch (cleanupError) {
+            console.error('Error cleaning up temp file:', cleanupError);
+          }
+        }
+      } else {
+        // Web platform sharing
+        if (navigator.share) {
+          try {
+            if (generatedImage.startsWith('data:')) {
+              // Convert data URL to blob for web sharing
+              const response = await fetch(generatedImage);
+              const blob = await response.blob();
+              const file = new File([blob], 'image.png', { type: 'image/png' });
+
+              await navigator.share({
+                title: 'Share Image',
+                text: 'Check out this image!',
+                files: [file]
+              });
+            } else {
+              await navigator.share({
+                title: 'Share Image',
+                text: 'Check out this image!',
+                url: generatedImage
+              });
+            }
+          } catch (shareError) {
+            console.error('Share error:', shareError);
+            // Fallback to opening in new tab
+            window.open(generatedImage, '_blank');
+          }
+        } else {
+          // Fallback for browsers that don't support sharing
+          window.open(generatedImage, '_blank');
+        }
       }
     } catch (error) {
       console.error('Share error:', error);
