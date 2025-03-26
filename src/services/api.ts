@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { store } from '../store';
 
-export const BASE_URL = 'https://pingz.ai/api/';
+export const BASE_URL = 'https://dev.pingz.ai/api/';
 // export const BASE_URL = 'https://13.234.13.140/';
 
 

@@ -58,6 +58,8 @@ export default function TemplateEditor() {
   const [templateVariables, setTemplateVariables] = useState<{[key: string]: string}>({});
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+  const [showDownloadSuccess, setShowDownloadSuccess] = useState(false);
+  const [showPermissionError, setShowPermissionError] = useState(false);
   
   // Initial data fetching
   useEffect(() => {
@@ -250,7 +252,7 @@ export default function TemplateEditor() {
 
     try {
       if (Platform.OS === 'web') {
-        // For web browsers
+        // Web download logic
         const response = await fetch(generatedImage);
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
@@ -269,19 +271,32 @@ export default function TemplateEditor() {
           text2: 'Image downloaded successfully',
           position: 'bottom',
         });
-      } else {
-        // For mobile platforms (iOS and Android)
+      } 
+      else if (Platform.OS === 'ios') {
+        // iOS-specific download logic
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        
+        if (status !== 'granted') {
+          Toast.show({
+            type: 'error',
+            text1: 'Permission Required',
+            text2: 'Please grant media library permissions to save images',
+            position: 'bottom',
+          });
+          return;
+        }
+
+        // Create a temporary file
         const filename = `pingz_${Date.now()}.png`;
         const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
+        // Download or write the file
         if (generatedImage.startsWith('data:')) {
-          // Handle data URLs
           const base64Data = generatedImage.split(',')[1];
           await FileSystem.writeAsStringAsync(fileUri, base64Data, {
             encoding: FileSystem.EncodingType.Base64,
           });
         } else {
-          // Handle regular URLs
           const downloadResult = await FileSystem.downloadAsync(
             generatedImage,
             fileUri
@@ -292,37 +307,93 @@ export default function TemplateEditor() {
           }
         }
 
-        // Check if sharing is available
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (isAvailable) {
-          // Open share dialog which allows saving to device
-          await Sharing.shareAsync(fileUri, {
-            mimeType: 'image/png',
-            dialogTitle: 'Save Image',
-            UTI: 'public.png' // for iOS
-          });
-
-          Toast.show({
-            type: 'success',
-            text1: 'Success',
-            text2: 'Use the share menu to save the image',
-            position: 'bottom',
-          });
-        } else {
-          Toast.show({
-            type: 'error',
-            text1: 'Error',
-            text2: 'Sharing is not available on this device',
-            position: 'bottom',
-          });
-        }
-
-        // Clean up the temporary file
+        // On iOS, simply save to gallery without album creation
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        
+        // Cleanup
         try {
           await FileSystem.deleteAsync(fileUri);
         } catch (cleanupError) {
-          console.error('Error cleaning up temp file:', cleanupError);
+          console.error('Cleanup error:', cleanupError);
         }
+        
+        // Show success toast
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Image saved to gallery',
+          position: 'bottom',
+        });
+      }
+      else if (Platform.OS === 'android') {
+        // Android-specific download logic
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        
+        if (status !== 'granted') {
+          // Use the custom success/error UI instead of Toast
+          setShowPermissionError(true);
+          setTimeout(() => {
+            setShowPermissionError(false);
+          }, 3000);
+          return;
+        }
+
+        // Create a temporary file
+        const filename = `pingz_${Date.now()}.png`;
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+        // Download or write the file
+        if (generatedImage.startsWith('data:')) {
+          const base64Data = generatedImage.split(',')[1];
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        } else {
+          const downloadResult = await FileSystem.downloadAsync(
+            generatedImage,
+            fileUri
+          );
+
+          if (downloadResult.status !== 200) {
+            throw new Error('Failed to download image');
+          }
+        }
+
+        // Save to media library - store the result in a variable
+        const asset = await MediaLibrary.createAssetAsync(fileUri);
+        
+        // Show the custom success UI instead of Toast
+        setShowDownloadSuccess(true);
+        console.log("Download success message showing now");
+        
+        // Try to create album in the background
+        try {
+          MediaLibrary.getAlbumAsync('Pingz')
+            .then(album => {
+              if (album === null) {
+                return MediaLibrary.createAlbumAsync('Pingz', asset, false);
+              } else {
+                return MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+              }
+            })
+            .catch(error => {
+              console.log("Album creation error (ignored):", error);
+            });
+        } catch (albumError) {
+          console.log("Album creation outer error (ignored):", albumError);
+        }
+
+        // Cleanup the temporary file
+        try {
+          await FileSystem.deleteAsync(fileUri);
+        } catch (cleanupError) {
+          console.error('Cleanup error:', cleanupError);
+        }
+
+        // After 3 seconds, hide the indicator
+        setTimeout(() => {
+          setShowDownloadSuccess(false);
+        }, 3000);
       }
     } catch (error) {
       console.error('Download error:', error);
@@ -351,57 +422,59 @@ export default function TemplateEditor() {
       if (Platform.OS !== 'web') {
         let fileUri;
         
-        // Handle data URLs
-        if (generatedImage.startsWith('data:')) {
-          // Create a temporary file from the data URL
-          const base64Data = generatedImage.split(',')[1];
-          const tempFilename = `${FileSystem.cacheDirectory}temp_share_${Date.now()}.png`;
-          await FileSystem.writeAsStringAsync(tempFilename, base64Data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          fileUri = tempFilename;
-        } else {
-          // Handle regular URLs
-          const filename = `pingz_${Date.now()}.png`;
-          const downloadUri = `${FileSystem.cacheDirectory}${filename}`;
-          
-          const downloadResult = await FileSystem.downloadAsync(
-            generatedImage,
-            downloadUri
-          );
+        try {
+          // Handle data URLs
+          if (generatedImage.startsWith('data:')) {
+            // Create a temporary file from the data URL
+            const base64Data = generatedImage.split(',')[1];
+            const tempFilename = `${FileSystem.cacheDirectory}temp_share_${Date.now()}.png`;
+            await FileSystem.writeAsStringAsync(tempFilename, base64Data, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            fileUri = tempFilename;
+          } else {
+            // Handle regular URLs
+            const filename = `pingz_${Date.now()}.png`;
+            const downloadUri = `${FileSystem.cacheDirectory}${filename}`;
+            
+            const downloadResult = await FileSystem.downloadAsync(
+              generatedImage,
+              downloadUri
+            );
 
-          if (downloadResult.status !== 200) {
-            throw new Error('Failed to download image');
+            if (downloadResult.status !== 200) {
+              throw new Error('Failed to download image');
+            }
+            
+            fileUri = downloadResult.uri;
           }
-          
-          fileUri = downloadResult.uri;
-        }
 
-        // Check if sharing is available
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (!isAvailable) {
-          Toast.show({
-            type: 'error',
-            text1: 'Sharing Unavailable',
-            text2: 'Sharing is not available on this device',
-            position: 'bottom',
+          // Check if sharing is available
+          const isAvailable = await Sharing.isAvailableAsync();
+          if (!isAvailable) {
+            Toast.show({
+              type: 'error',
+              text1: 'Sharing Unavailable',
+              text2: 'Sharing is not available on this device',
+              position: 'bottom',
+            });
+            return;
+          }
+
+          // Share the local file
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share Image',
+            UTI: 'public.png' // This helps on iOS
           });
-          return;
-        }
-
-        // Share the local file
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'image/png',
-          dialogTitle: 'Share Image',
-          UTI: 'public.png' // This helps on iOS
-        });
-
-        // Clean up temporary file
-        if (fileUri.includes('temp_share_')) {
-          try {
-            await FileSystem.deleteAsync(fileUri);
-          } catch (cleanupError) {
-            console.error('Error cleaning up temp file:', cleanupError);
+        } finally {
+          // Clean up temporary file
+          if (fileUri && fileUri.includes('temp_share_')) {
+            try {
+              await FileSystem.deleteAsync(fileUri);
+            } catch (cleanupError) {
+              console.error('Error cleaning up temp file:', cleanupError);
+            }
           }
         }
       } else {
@@ -446,6 +519,15 @@ export default function TemplateEditor() {
       });
     }
   };
+
+  // Add this near the top of your component
+  useEffect(() => {
+    // Make sure Toast is properly loaded before configuring
+    if (Toast && typeof Toast.show === 'function') {
+      // Some versions of react-native-toast-message might not have setConfig
+      // We can use the config prop when showing toasts instead
+    }
+  }, []);
 
   // Loading and error states
   if (loading) {
@@ -596,6 +678,56 @@ export default function TemplateEditor() {
       </ScrollView>
       
       {renderMediaLibrary()}
+
+      {showDownloadSuccess && (
+        <View style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 0,
+          right: 0,
+          alignItems: 'center',
+          zIndex: 9999,
+        }}>
+          <View style={{
+            backgroundColor: '#4CAF50',
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 25,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+            <Ionicons name="checkmark-circle" size={24} color="white" />
+            <ThemedText style={{ color: 'white', marginLeft: 10, fontWeight: 'bold' }}>
+              Image saved to gallery
+            </ThemedText>
+          </View>
+        </View>
+      )}
+
+      {showPermissionError && (
+        <View style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 0,
+          right: 0,
+          alignItems: 'center',
+          zIndex: 9999,
+        }}>
+          <View style={{
+            backgroundColor: '#FF5252',
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 25,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+            <Ionicons name="alert-circle" size={24} color="white" />
+            <ThemedText style={{ color: 'white', marginLeft: 10, fontWeight: 'bold' }}>
+              Permission required to save images
+            </ThemedText>
+          </View>
+        </View>
+      )}
     </ThemedView>
   );
 }
