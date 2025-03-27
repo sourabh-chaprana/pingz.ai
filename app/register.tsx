@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Modal } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Modal, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
-import { register, verifyOtp } from '../src/features/auth/authThunks';
+import { register, verifyOtp, resendOtp } from '../src/features/auth/authThunks';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
@@ -17,31 +17,110 @@ export default function RegisterScreen() {
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('USER');
   const [showPassword, setShowPassword] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpVerificationLoading, setOtpVerificationLoading] = useState(false);
+  const [useMobile, setUseMobile] = useState(false);
+  const [txnId, setTxnId] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
   
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
 
   const handleRegister = async () => {
     try {
-      const result = await dispatch(register({ name, email, password, userType })).unwrap();
-      if (result) {
-        console.log('Registration started:', result);
+      // Validate inputs
+      if (!name) {
         Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'OTP sent to your email',
+          type: 'error',
+          text1: 'Name Required',
+          text2: 'Please enter your name',
         });
+        return;
+      }
+      
+      if (useMobile) {
+        if (!mobileNumber) {
+          Toast.show({
+            type: 'error',
+            text1: 'Mobile Number Required',
+            text2: 'Please enter your mobile number',
+          });
+          return;
+        }
         
-        // Clear password but keep email for OTP verification
-        setName('');
-        setPassword('');
-        setShowOtpModal(true);
+        // Create payload for mobile registration (no password needed)
+        const payload = {
+          name,
+          mobileNumber,
+          userType
+        };
+        
+        const result = await dispatch(register(payload)).unwrap();
+        if (result) {
+          console.log('Mobile registration started:', result);
+          
+          // Store transaction ID for OTP verification
+          if (result.txnId) {
+            setTxnId(result.txnId);
+          }
+          
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'OTP sent to your mobile',
+          });
+          
+          // Clear name but keep mobile for OTP verification
+          setName('');
+          setShowOtpModal(true);
+        }
+      } else {
+        // Email registration - validate email and password
+        if (!email) {
+          Toast.show({
+            type: 'error',
+            text1: 'Email Required',
+            text2: 'Please enter your email',
+          });
+          return;
+        }
+        
+        if (!password) {
+          Toast.show({
+            type: 'error',
+            text1: 'Password Required',
+            text2: 'Please enter a password',
+          });
+          return;
+        }
+        
+        const payload = {
+          name,
+          email,
+          password,
+          userType
+        };
+        
+        const result = await dispatch(register(payload)).unwrap();
+        if (result) {
+          console.log('Email registration started:', result);
+          
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'OTP sent to your email',
+          });
+          
+          // Clear name and password but keep email for OTP verification
+          setName('');
+          setPassword('');
+          setShowOtpModal(true);
+        }
       }
     } catch (error) {
       console.log('Registration failed:', error);
@@ -77,9 +156,19 @@ export default function RegisterScreen() {
 
     try {
       setOtpVerificationLoading(true);
-      const result = await dispatch(verifyOtp({ email, code: otpCode })).unwrap();
       
-      // Check if verification was successful (status 200)
+      // Create payload based on whether we're using email or mobile
+      const payload: VerifyOtpCredentials = { code: otpCode };
+      
+      if (txnId) {
+        payload.txnId = txnId;
+      } else if (!useMobile) {
+        payload.email = email;
+      }
+      
+      const result = await dispatch(verifyOtp(payload)).unwrap();
+      
+      // Check if verification was successful
       if (result && result.success) {
         Toast.show({
           type: 'success',
@@ -90,7 +179,9 @@ export default function RegisterScreen() {
         // Clear form and OTP data
         setShowOtpModal(false);
         setEmail('');
+        setMobileNumber('');
         setOtp(['', '', '', '', '', '']);
+        setTxnId('');
         
         // Navigate to login only on success
         router.replace('/login');
@@ -115,6 +206,46 @@ export default function RegisterScreen() {
     }
   };
   
+  const handleResendOtp = async () => {
+    try {
+      setResendLoading(true);
+      
+      if (!useMobile || !mobileNumber) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Mobile number is required to resend OTP',
+        });
+        return;
+      }
+      
+      const result = await dispatch(resendOtp({ mobileNumber })).unwrap();
+      
+      if (result && result.txnId) {
+        setTxnId(result.txnId);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'OTP sent again to your mobile',
+        });
+        
+        // Clear OTP fields
+        setOtp(['', '', '', '', '', '']);
+        if (otpInputs.current[0]) {
+          otpInputs.current[0]?.focus();
+        }
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: typeof error === 'string' ? error : 'Failed to resend OTP',
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+  
   const handleCloseModal = () => {
     setShowOtpModal(false);
     setOtp(['', '', '', '', '', '']);
@@ -122,6 +253,13 @@ export default function RegisterScreen() {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleAuthMethod = () => {
+    setUseMobile(!useMobile);
+    // Clear email/mobile when switching between methods
+    setEmail('');
+    setMobileNumber('');
   };
 
   return (
@@ -149,33 +287,61 @@ export default function RegisterScreen() {
           autoCapitalize="words"
         />
 
-        <ThemedText style={styles.inputLabel}>Email address</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <ThemedText style={styles.inputLabel}>Password</ThemedText>
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="Create a password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
+        {/* Auth method toggle */}
+        <View style={styles.authToggleContainer}>
+          <ThemedText style={styles.authToggleText}>
+            {useMobile ? "Use Email Instead" : "Use Mobile Number Instead"}
+          </ThemedText>
+          <Switch
+            value={useMobile}
+            onValueChange={toggleAuthMethod}
+            trackColor={{ false: '#ccc', true: '#8372FF' }}
+            thumbColor={useMobile ? '#6949FF' : '#f4f3f4'}
           />
-          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-            <Ionicons 
-              name={showPassword ? "eye-off-outline" : "eye-outline"} 
-              size={22} 
-              color="#777" 
-            />
-          </TouchableOpacity>
         </View>
+
+        {useMobile ? (
+          <>
+            <ThemedText style={styles.inputLabel}>Mobile Number</ThemedText>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your mobile number"
+              value={mobileNumber}
+              onChangeText={setMobileNumber}
+              keyboardType="phone-pad"
+            />
+          </>
+        ) : (
+          <>
+            <ThemedText style={styles.inputLabel}>Email address</ThemedText>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            
+            <ThemedText style={styles.inputLabel}>Password</ThemedText>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Create a password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={22} 
+                  color="#777" 
+                />
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
         <TouchableOpacity 
           style={styles.registerButton}
@@ -204,14 +370,6 @@ export default function RegisterScreen() {
             <FontAwesome name="facebook" size={22} color="#4267B2" />
           </TouchableOpacity>
         </View>
-
-        {/* <View style={styles.termsContainer}>
-          <ThemedText style={styles.termsText}>
-            By clicking Create account you agree to our{' '}
-            <ThemedText style={styles.termsLink}>Terms of use</ThemedText> and{' '}
-            <ThemedText style={styles.termsLink}>Privacy policy</ThemedText>
-          </ThemedText>
-        </View> */}
       </View>
 
       {/* OTP Verification Modal */}
@@ -223,9 +381,9 @@ export default function RegisterScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.otpModalContainer}>
-            <ThemedText style={styles.otpTitle}>Verify your email</ThemedText>
+            <ThemedText style={styles.otpTitle}>Verify your {useMobile ? 'mobile number' : 'email'}</ThemedText>
             <ThemedText style={styles.otpDescription}>
-              Enter the 6-digit code sent to {email}
+              Enter the 6-digit code sent to {useMobile ? mobileNumber : email}
             </ThemedText>
 
             <View style={styles.otpInputContainer}>
@@ -251,6 +409,18 @@ export default function RegisterScreen() {
                 {otpVerificationLoading ? 'Verifying...' : 'Verify OTP'}
               </ThemedText>
             </TouchableOpacity>
+
+            {useMobile && (
+              <TouchableOpacity 
+                style={[styles.resendButton, resendLoading && styles.disabledButton]}
+                onPress={handleResendOtp}
+                disabled={resendLoading}
+              >
+                <ThemedText style={styles.resendButtonText}>
+                  {resendLoading ? 'Sending...' : 'Resend OTP'}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity onPress={handleCloseModal}>
               <ThemedText style={styles.cancelText}>Cancel</ThemedText>
@@ -498,5 +668,34 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
     marginTop: 8,
+  },
+  authToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  authToggleText: {
+    fontSize: 14,
+    color: '#6949FF',
+  },
+  resendButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#6949FF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  resendButtonText: {
+    color: '#6949FF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+    borderColor: '#999',
   },
 });

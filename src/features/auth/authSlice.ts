@@ -1,5 +1,5 @@
 import { PayloadAction, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { login, logout, register, refreshToken, verifyOtp } from './authThunks';
+import { login, logout, register, refreshToken, verifyOtp, resendOtp } from './authThunks';
 
 interface User {
   id: string;
@@ -151,6 +151,18 @@ const authSlice = createSlice({
               userType: tokenData.userType
             };
           }
+        })
+        .addCase(resendOtp.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(resendOtp.fulfilled, (state, action) => {
+          state.loading = false;
+          console.log('OTP resent successfully');
+        })
+        .addCase(resendOtp.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.error.message || 'Failed to resend OTP';
         });
     },
 });

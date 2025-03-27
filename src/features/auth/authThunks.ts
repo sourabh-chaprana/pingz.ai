@@ -9,14 +9,20 @@ interface LoginCredentials {
 
 interface RegisterCredentials {
   name: string;
-  email: string;
+  email?: string;
   password: string;
   userType?: string;
+  mobileNumber?: string;
 }
 
 interface VerifyOtpCredentials {
-  email: string;
+  email?: string;
   code: string;
+  txnId?: string;
+}
+
+interface ResendOtpCredentials {
+  mobileNumber: string;
 }
 
 interface LoginResponse {
@@ -71,6 +77,19 @@ export const verifyOtp = createAsyncThunk<any, VerifyOtpCredentials>(
     } catch (error: any) {
       console.error('OTP verification error:', error);
       const errorMessage = error.response?.data?.message || 'OTP verification failed';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const resendOtp = createAsyncThunk<any, ResendOtpCredentials>(
+  'auth/resendOtp',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/user/login', credentials);
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to resend OTP';
       return rejectWithValue(errorMessage);
     }
   }
