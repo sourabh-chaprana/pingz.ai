@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform } from 'react-native';
+import { useState, useRef } from 'react';
+import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Switch, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
-import { login } from '../src/features/auth/authThunks';
+import { login, resendOtp, verifyOtp } from '../src/features/auth/authThunks';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,35 +46,75 @@ export default function LoginScreen() {
   const { loading, error } = useAppSelector((state: { auth: any; }) => state.auth);
   
   const [email, setEmail] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [useMobile, setUseMobile] = useState(false);
+  
+  // OTP related states
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpVerificationLoading, setOtpVerificationLoading] = useState(false);
+  const [txnId, setTxnId] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  
+  // Create refs for OTP inputs
+  const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
 
   const handleLogin = async () => {
     try {
-      if (!email || !password) {
-        Toast.show({
-          type: 'error',
-          text1: 'Validation Error',
-          text2: 'Please enter both email and password',
-        });
-        return;
-      }
-      
-      console.log('Attempting login with:', { email }); // Don't log password
-      const result = await dispatch(login({ email, password })).unwrap();
-      console.log('Login API response:', result);
-      
-      if (result) {
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: result.message || 'Login successful',
-        });
+      if (useMobile) {
+        // Mobile login flow
+        if (!mobileNumber) {
+          Toast.show({
+            type: 'error',
+            text1: 'Validation Error',
+            text2: 'Please enter your mobile number',
+          });
+          return;
+        }
         
-        // Add slight delay to allow state to update before navigation
-        setTimeout(() => {
-          router.replace('/(tabs)');
-        }, 300); // Increased delay for mobile
+        // Send OTP to mobile number
+        const result = await dispatch(resendOtp({ mobileNumber })).unwrap();
+        
+        if (result && result.txnId) {
+          setTxnId(result.txnId);
+          Toast.show({
+            type: 'success',
+            text1: 'OTP Sent',
+            text2: 'Please enter the OTP sent to your mobile',
+          });
+          
+          // Show OTP modal
+          setShowOtpModal(true);
+        }
+      } else {
+        // Email login flow - requires password
+        if (!email || !password) {
+          Toast.show({
+            type: 'error',
+            text1: 'Validation Error',
+            text2: 'Please enter both email and password',
+          });
+          return;
+        }
+        
+        console.log('Attempting login with:', { email }); // Don't log password
+        const result = await dispatch(login({ email, password })).unwrap();
+        console.log('Login API response:', result);
+        
+        if (result) {
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: result.message || 'Login successful',
+          });
+          
+          // Add slight delay to allow state to update before navigation
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 300); // Increased delay for mobile
+        }
       }
     } catch (error) {
       console.error('Login error details:', error);
@@ -86,8 +126,134 @@ export default function LoginScreen() {
     }
   };
 
+  const handleOtpChange = (value: string, index: number) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    
+    // Auto focus to next input
+    if (value && index < 5 && otpInputs.current[index + 1]) {
+      otpInputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid OTP',
+        text2: 'Please enter all 6 digits',
+      });
+      return;
+    }
+
+    try {
+      setOtpVerificationLoading(true);
+      
+      // Verify OTP for mobile login
+      const payload = { 
+        code: otpCode,
+        txnId: txnId
+      };
+      
+      const result = await dispatch(verifyOtp(payload)).unwrap();
+      
+      if (result && (result.success || result.idToken)) {
+        // If the API returned tokens, store them
+        if (result.idToken) {
+          await Storage.setItem('token', result.idToken);
+          await Storage.setItem('refreshToken', result.refreshToken || '');
+        }
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Login successful',
+        });
+        
+        // Clear OTP data and close modal
+        setShowOtpModal(false);
+        setOtp(['', '', '', '', '', '']);
+        setTxnId('');
+        
+        // Navigate to main app
+        setTimeout(() => {
+          router.replace('/(tabs)');
+        }, 300);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Verification Failed',
+          text2: 'Invalid OTP or session expired',
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Verification Failed',
+        text2: typeof error === 'string' ? error : 'Invalid OTP',
+      });
+    } finally {
+      setOtpVerificationLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setResendLoading(true);
+      
+      if (!mobileNumber) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Mobile number is required to resend OTP',
+        });
+        return;
+      }
+      
+      const result = await dispatch(resendOtp({ mobileNumber })).unwrap();
+      
+      if (result && result.txnId) {
+        setTxnId(result.txnId);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'OTP sent again to your mobile',
+        });
+        
+        // Clear OTP fields
+        setOtp(['', '', '', '', '', '']);
+        if (otpInputs.current[0]) {
+          otpInputs.current[0]?.focus();
+        }
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: typeof error === 'string' ? error : 'Failed to resend OTP',
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+  
+  const handleCloseModal = () => {
+    setShowOtpModal(false);
+    setOtp(['', '', '', '', '', '']);
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleAuthMethod = () => {
+    setUseMobile(!useMobile);
+    // Clear email/mobile when switching between methods
+    setEmail('');
+    setMobileNumber('');
+    setPassword('');
   };
 
   return (
@@ -102,41 +268,65 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* {error && (
-          <ThemedText style={styles.error}>{error}</ThemedText>
-        )} */}
-
-        <ThemedText style={styles.inputLabel}>Email address</ThemedText>
-        <TextInput
-          style={styles.input}
-          placeholder="Email address"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <ThemedText style={styles.inputLabel}>Password</ThemedText>
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
+        {/* Auth method toggle */}
+        <View style={styles.authToggleContainer}>
+          <ThemedText style={styles.authToggleText}>
+            {useMobile ? "Use Email Instead" : "Use Mobile Number Instead"}
+          </ThemedText>
+          <Switch
+            value={useMobile}
+            onValueChange={toggleAuthMethod}
+            trackColor={{ false: '#ccc', true: '#8372FF' }}
+            thumbColor={useMobile ? '#6949FF' : '#f4f3f4'}
           />
-          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-            <Ionicons 
-              name={showPassword ? "eye-off-outline" : "eye-outline"} 
-              size={22} 
-              color="#777" 
-            />
-          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.recoveryLink}>
-          <ThemedText style={styles.recoveryText}>Recovery Password</ThemedText>
-        </TouchableOpacity>
+        {useMobile ? (
+          <>
+            <ThemedText style={styles.inputLabel}>Mobile Number</ThemedText>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your mobile number"
+              value={mobileNumber}
+              onChangeText={setMobileNumber}
+              keyboardType="phone-pad"
+            />
+          </>
+        ) : (
+          <>
+            <ThemedText style={styles.inputLabel}>Email address</ThemedText>
+            <TextInput
+              style={styles.input}
+              placeholder="Email address"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+
+            <ThemedText style={styles.inputLabel}>Password</ThemedText>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={22} 
+                  color="#777" 
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.recoveryLink}>
+              <ThemedText style={styles.recoveryText}>Recovery Password</ThemedText>
+            </TouchableOpacity>
+          </>
+        )}
 
         <TouchableOpacity 
           style={styles.loginButton}
@@ -144,13 +334,13 @@ export default function LoginScreen() {
           disabled={loading}
         >
           <ThemedText style={styles.buttonText}>
-            {loading ? 'Processing...' : 'Continue'}
+            {loading ? 'Processing...' : useMobile ? 'Get OTP' : 'Continue'}
           </ThemedText>
         </TouchableOpacity>
 
         <View style={styles.dividerContainer}>
           <View style={styles.divider} />
-          <ThemedText style={styles.dividerText}>or sign up with</ThemedText>
+          <ThemedText style={styles.dividerText}>or sign in with</ThemedText>
           <View style={styles.divider} />
         </View>
 
@@ -165,15 +355,63 @@ export default function LoginScreen() {
             <FontAwesome name="facebook" size={22} color="#4267B2" />
           </TouchableOpacity>
         </View>
-
-        {/* <View style={styles.termsContainer}>
-          <ThemedText style={styles.termsText}>
-            By clicking Create account you agree to Recognotes{' '}
-            <ThemedText style={styles.termsLink}>Terms of use</ThemedText> and{' '}
-            <ThemedText style={styles.termsLink}>Privacy policy</ThemedText>
-          </ThemedText>
-        </View> */}
       </View>
+
+      {/* OTP Verification Modal */}
+      <Modal
+        visible={showOtpModal}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.otpModalContainer}>
+            <ThemedText style={styles.otpTitle}>Verify your mobile number</ThemedText>
+            <ThemedText style={styles.otpDescription}>
+              Enter the 6-digit code sent to {mobileNumber}
+            </ThemedText>
+
+            <View style={styles.otpInputContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={styles.otpInput}
+                  value={digit}
+                  onChangeText={(value) => handleOtpChange(value, index)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  ref={ref => otpInputs.current[index] = ref}
+                />
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.verifyButton}
+              onPress={handleVerifyOtp}
+              disabled={otpVerificationLoading}
+            >
+              <ThemedText style={styles.buttonText}>
+                {otpVerificationLoading ? 'Verifying...' : 'Login with OTP'}
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.resendButton, resendLoading && styles.disabledButton]}
+              onPress={handleResendOtp}
+              disabled={resendLoading}
+            >
+              <ThemedText style={styles.resendButtonText}>
+                {resendLoading ? 'Sending...' : 'Resend OTP'}
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleCloseModal}>
+              <ThemedText style={styles.cancelText}>Cancel</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Toast />
     </ThemedView>
   );
@@ -325,22 +563,116 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  termsContainer: {
+  authToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  termsText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  termsLink: {
+  authToggleText: {
+    fontSize: 14,
     color: '#6949FF',
-    fontWeight: '500',
   },
   error: {
     color: '#ff4444',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  otpModalContainer: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  otpTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  otpDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 32,
+  },
+  otpInput: {
+    width: 46,
+    height: 54,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    fontSize: 20,
+    textAlign: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  verifyButton: {
+    backgroundColor: '#6949FF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6949FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  resendButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#6949FF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  resendButtonText: {
+    color: '#6949FF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+    borderColor: '#999',
+  },
+  cancelText: {
+    color: '#666',
+    fontSize: 16,
+    marginTop: 8,
   },
 }); 
