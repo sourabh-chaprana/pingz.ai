@@ -57,7 +57,7 @@ function CustomSplashScreen() {
   return (
     <View style={styles.splashContainer}>
       <Image
-        source={require("../assets/images/logo.jpeg")} // Make sure to add your logo to assets folder
+        source={require("../assets/images/pingz.png")} // Make sure to add your logo to assets folder
         style={styles.logo}
         resizeMode="contain"
       />

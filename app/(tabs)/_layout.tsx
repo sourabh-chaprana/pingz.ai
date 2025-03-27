@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View } from 'react-native';
+import { View, Image } from 'react-native';
 import { createElevation } from '../../utils/styles';
 
 export default function TabLayout() {
@@ -34,7 +34,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
+       <Tabs.Screen
         name="create"
         options={{
           title: '',
@@ -42,14 +42,21 @@ export default function TabLayout() {
             <View style={{
               width: 56,
               height: 56,
-              backgroundColor: '#8B3DFF',
+              backgroundColor: '#FFFFFF',
+              borderWidth: 2,
+              borderColor: '#FF4785',
               borderRadius: 28,
               justifyContent: 'center',
               alignItems: 'center',
               marginTop: -30,
               ...createElevation(5),
             }}>
-              <Ionicons name="add" size={32} color="#fff" />
+              <Image 
+                         
+                         source={require('../../assets/images/pingz.png')} 
+                          style={{ width: 36, height: 36 }} 
+                          resizeMode="contain" 
+              />
             </View>
           ),
         }}
