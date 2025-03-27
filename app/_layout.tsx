@@ -1,25 +1,41 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Drawer } from 'expo-router/drawer';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Dimensions, TextInput, TouchableOpacity, Platform, Animated } from 'react-native';
-import 'react-native-reanimated';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Ionicons } from '@expo/vector-icons';
-import { ProfileHeader } from '@/components/ProfileHeader';
-import { MenuItem } from '@/components/MenuItem';
-import { Tabs } from 'expo-router';
-import { createElevation } from '@/utils/styles';
-import { Provider, useSelector } from 'react-redux';
-import { store } from '../src/store';
-import { RootState } from '../src/store';
-import React from 'react';
-import Toast from 'react-native-toast-message';
-import { ThemedText } from '@/components/ThemedText';
-import { useRoute } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Drawer } from "expo-router/drawer";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
+import {
+  View,
+  Image,
+  StyleSheet,
+  Dimensions,
+  TextInput,
+  TouchableOpacity,
+  Platform,
+  Animated,
+  ActivityIndicator,
+} from "react-native";
+import "react-native-reanimated";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Ionicons } from "@expo/vector-icons";
+import { ProfileHeader } from "@/components/ProfileHeader";
+import { MenuItem } from "@/components/MenuItem";
+import { Tabs } from "expo-router";
+import { createElevation } from "@/utils/styles";
+import { Provider, useSelector, useDispatch } from "react-redux";
+import { store } from "../src/store";
+import { RootState } from "../src/store";
+import React from "react";
+import Toast from "react-native-toast-message";
+import { ThemedText } from "@/components/ThemedText";
+import { useRoute } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { fetchRecentTemplates } from "@/src/features/home/homeThunks";
+import { useRouter } from "expo-router";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -48,123 +64,212 @@ function CustomSplashScreen() {
   );
 }
 
+// Create a new component for the Recent Designs section in the drawer
+function RecentDesignsSection({ navigation }: { navigation: any }) {
+  const [expanded, setExpanded] = useState(true);
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+  // Get the recent templates from Redux store
+  const { recentTemplates, loading } = useSelector(
+    (state: RootState) => state.home
+  );
+
+  // Fetch recent templates when the component mounts
+  useEffect(() => {
+    dispatch(fetchRecentTemplates());
+  }, [dispatch]);
+
+  const toggleExpanded = () => {
+    setExpanded(!expanded);
+  };
+
+  const handleTemplatePress = (templateId: string) => {
+    // Use router.push instead of navigation.navigate
+    router.push(`/template-editor/${templateId}`);
+  };
+
+  return (
+    <View style={styles.recentDesignsContainer}>
+      <TouchableOpacity
+        style={styles.recentDesignsHeader}
+        onPress={toggleExpanded}
+      >
+        <ThemedText style={styles.recentDesignsTitle}>
+          Recent designs
+        </ThemedText>
+        <Ionicons
+          name={expanded ? "chevron-down" : "chevron-forward"}
+          size={20}
+          color="#333"
+        />
+      </TouchableOpacity>
+
+      {expanded && (
+        <View style={styles.recentDesignsList}>
+          {loading ? (
+            <ActivityIndicator
+              size="small"
+              color="#8B3DFF"
+              style={{ marginVertical: 10 }}
+            />
+          ) : recentTemplates && recentTemplates.length > 0 ? (
+            recentTemplates.slice(0, 5).map((template) => (
+              <TouchableOpacity
+                key={template.id}
+                style={styles.recentDesignItem}
+                onPress={() => handleTemplatePress(template.id)}
+              >
+                <Image
+                  source={{ uri: template.url }}
+                  style={styles.recentDesignThumbnail}
+                  resizeMode="cover"
+                />
+                <ThemedText
+                  style={styles.recentDesignText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {template.templateName}
+                </ThemedText>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <ThemedText style={styles.noRecentDesignsText}>
+              No recent designs found
+            </ThemedText>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function CustomDrawerContent(props: any) {
+  const isAuthenticated = useSelector((state: RootState) =>
+    Boolean(state.auth.token)
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <ProfileHeader />
-      <MenuItem 
-        icon="home-outline" 
-        label="Home" 
-        onPress={() => props.navigation.navigate('(tabs)')}
+      <MenuItem
+        icon="home-outline"
+        label="Home"
+        onPress={() => props.navigation.navigate("(tabs)")}
       />
-      {/* <MenuItem 
-        icon="apps-outline" 
-        label="Brand" 
-        showChevron 
-        onPress={() => props.navigation.navigate('brand')}
+     
+      <MenuItem
+        icon="bulb-outline"
+        label="Dream Lab"
+        onPress={() => props.navigation.navigate("dreamlab")}
       />
-      <MenuItem 
-        icon="grid-outline" 
-        label="Apps" 
-        showChevron 
-        onPress={() => props.navigation.navigate('apps')}
-      /> */}
-      <MenuItem 
-        icon="bulb-outline" 
-        label="Dream Lab" 
-        onPress={() => props.navigation.navigate('dreamlab')}
+      <MenuItem
+        icon="help-circle-outline"
+        label="Ask Canva"
+        onPress={() => props.navigation.navigate("ask")}
       />
-      <MenuItem 
-        icon="help-circle-outline" 
-        label="Ask Canva" 
-        onPress={() => props.navigation.navigate('ask')}
+      <MenuItem
+        icon="help-circle-outline"
+        label="Account"
+        onPress={() => props.navigation.navigate("account")}
       />
-      <MenuItem 
-        icon="trash-outline" 
-        label="Trash" 
-        onPress={() => props.navigation.navigate('trash')}
-      />
+
+
+      {/* Add divider before Recent designs section */}
+      <View style={styles.divider} />
+
+      {/* Add the Recent designs section */}
+      {isAuthenticated && (
+        <RecentDesignsSection navigation={props.navigation} />
+      )}
     </View>
   );
 }
 
 // Custom search header component
 function SearchHeader({ navigation }: { navigation: any }) {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
   const route = useRoute();
-  
+
   // Get the scroll position from context
   const { scrollY } = useScrollContext();
-  
+
   // Calculate the header background opacity based on scroll position
   const headerBackgroundOpacity = scrollY.interpolate({
     inputRange: [0, 50],
     outputRange: [0, 1],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
-  
+
   // Create animated values for the search bar and button styles
   // when scrolling (add subtle shadow/border when background is white)
   const searchBarStyle = {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    shadowColor: '#000',
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: headerBackgroundOpacity.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 0.1]
+      outputRange: [0, 0.1],
     }),
     shadowRadius: 3,
     elevation: headerBackgroundOpacity.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 1]
+      outputRange: [0, 1],
     }),
     borderWidth: headerBackgroundOpacity.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 1]
+      outputRange: [0, 1],
     }),
-    borderColor: 'rgba(0, 0, 0, 0.05)',
+    borderColor: "rgba(0, 0, 0, 0.05)",
   };
-  
+
   // If not authenticated, return null or an empty view
   if (!isAuthenticated) {
     return null;
   }
-  
+
   return (
     <View style={searchStyles.headerContainer}>
       {/* Background Image - shown when not scrolled */}
       <Animated.View
         style={[
           searchStyles.backgroundImageContainer,
-          { opacity: Animated.subtract(1, headerBackgroundOpacity) }
+          { opacity: Animated.subtract(1, headerBackgroundOpacity) },
         ]}
       >
-        <Image 
-          source={{ uri: "https://img.freepik.com/free-photo/blurred-blue-sky-sea-well-use-as-blur-backdrop-ocean-concept-blurry-pastel-colored-sunshine_1258-239.jpg?t=st=1742402532~exp=1742406132~hmac=791461f45fbda633c20276a20237f9c7a1a8047b6463cf35f2a606a0bf6abe1d&w=996" }}
+        <Image
+          source={{
+            uri: "https://img.freepik.com/free-photo/blurred-blue-sky-sea-well-use-as-blur-backdrop-ocean-concept-blurry-pastel-colored-sunshine_1258-239.jpg?t=st=1742402532~exp=1742406132~hmac=791461f45fbda633c20276a20237f9c7a1a8047b6463cf35f2a606a0bf6abe1d&w=996",
+          }}
           style={searchStyles.backgroundImage}
           resizeMode="cover"
         />
       </Animated.View>
-      
+
       {/* White background - shown when scrolled */}
-      <Animated.View 
+      <Animated.View
         style={[
           searchStyles.whiteBackground,
-          { opacity: headerBackgroundOpacity }
+          { opacity: headerBackgroundOpacity },
         ]}
       />
-      
+
       {/* Search Controls */}
       <View style={searchStyles.searchControls}>
-        <Animated.View style={[searchStyles.menuButtonContainer, searchBarStyle]}>
-          <TouchableOpacity 
+        <Animated.View
+          style={[searchStyles.menuButtonContainer, searchBarStyle]}
+        >
+          <TouchableOpacity
             style={searchStyles.menuButton}
             onPress={() => navigation.toggleDrawer()}
           >
             <Ionicons name="menu-outline" size={24} color="#333" />
           </TouchableOpacity>
         </Animated.View>
-        
+
         <Animated.View style={[searchStyles.searchContainer, searchBarStyle]}>
           <Ionicons name="search" size={20} color="#666" />
           <TextInput
@@ -173,9 +278,11 @@ function SearchHeader({ navigation }: { navigation: any }) {
             style={searchStyles.searchInput}
           />
         </Animated.View>
-        
-        <Animated.View style={[searchStyles.notificationButtonContainer, searchBarStyle]}>
-          <TouchableOpacity 
+
+        <Animated.View
+          style={[searchStyles.notificationButtonContainer, searchBarStyle]}
+        >
+          <TouchableOpacity
             style={searchStyles.notificationButton}
             activeOpacity={0.7}
           >
@@ -188,7 +295,9 @@ function SearchHeader({ navigation }: { navigation: any }) {
 }
 
 function DrawerNavigator() {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
 
   return (
     <Drawer
@@ -197,32 +306,39 @@ function DrawerNavigator() {
         headerShown: isAuthenticated, // Only show header when authenticated
         header: () => <SearchHeader navigation={navigation} />,
         headerStyle: {
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
           elevation: 0, // Remove shadow on Android
           shadowOpacity: 0, // Remove shadow on iOS
         },
-        headerTintColor: '#333',
+        headerTintColor: "#333",
         drawerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: "#fff",
         },
-        drawerActiveBackgroundColor: '#f0e6ff',
-        drawerActiveTintColor: '#8B3DFF',
+        drawerActiveBackgroundColor: "#f0e6ff",
+        drawerActiveTintColor: "#8B3DFF",
         swipeEnabled: isAuthenticated,
       })}
     >
       <Drawer.Screen
         name="(tabs)"
         options={{
-          title: 'Home',
+          title: "Home",
         }}
       />
       {isAuthenticated && (
         <>
-          <Drawer.Screen name="brand" options={{ title: 'Brand' }} />
-          <Drawer.Screen name="apps" options={{ title: 'Apps' }} />
-          <Drawer.Screen name="dreamlab" options={{ title: 'Dream Lab' }} />
-          <Drawer.Screen name="ask" options={{ title: 'Ask Canva' }} />
-          <Drawer.Screen name="trash" options={{ title: 'Trash' }} />
+          <Drawer.Screen name="brand" options={{ title: "Brand" }} />
+          <Drawer.Screen name="apps" options={{ title: "Apps" }} />
+          <Drawer.Screen name="dreamlab" options={{ title: "Dream Lab" }} />
+          <Drawer.Screen name="ask" options={{ title: "Ask Canva" }} />
+          <Drawer.Screen name="trash" options={{ title: "Trash" }} />
+          <Drawer.Screen
+            name="template-editor/[id]"
+            options={{
+              title: "Template Editor",
+              drawerItemStyle: { display: "none" }, // Hide from drawer list
+            }}
+          />
         </>
       )}
     </Drawer>
@@ -232,11 +348,11 @@ function DrawerNavigator() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
   const [isAppReady, setIsAppReady] = useState(false);
   const [isTokenLoaded, setIsTokenLoaded] = useState(false);
-  
+
   // Create the animated scroll value
   const scrollY = React.useRef(new Animated.Value(0)).current;
 
@@ -246,7 +362,7 @@ export default function RootLayout() {
         // Load fonts and any other resources here
         if (loaded) {
           // Wait for a short delay to show the splash screen
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds splash visibility
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds splash visibility
           setIsAppReady(true);
         }
       } catch (e) {
@@ -268,18 +384,18 @@ export default function RootLayout() {
     // Check if token exists on app startup
     const loadToken = async () => {
       try {
-        const token = await AsyncStorage.getItem('auth_token');
-        
+        const token = await AsyncStorage.getItem("auth_token");
+
         // If no token is found, you might want to redirect to login
         // depending on your app's requirements
-        
+
         setIsTokenLoaded(true);
       } catch (error) {
-        console.error('Failed to load authentication token:', error);
+        console.error("Failed to load authentication token:", error);
         setIsTokenLoaded(true);
       }
     };
-    
+
     loadToken();
   }, []);
 
@@ -290,7 +406,7 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <ScrollProvider value={{ scrollY }}>
           <DrawerNavigator />
           <StatusBar style="auto" />
@@ -301,27 +417,77 @@ export default function RootLayout() {
   );
 }
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF', // Customize this to match your brand
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF", // Customize this to match your brand
   },
   logo: {
     width: width * 0.7,
     height: height * 0.3,
-  }
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#e0e0e0",
+    marginVertical: 10,
+    marginHorizontal: 10,
+  },
+  recentDesignsContainer: {
+    marginTop: 5,
+    paddingHorizontal: 10,
+  },
+  recentDesignsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  recentDesignsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  recentDesignsList: {
+    marginTop: 5,
+  },
+  recentDesignItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  recentDesignThumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  recentDesignText: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+  },
+  noRecentDesignsText: {
+    fontSize: 14,
+    color: "#888",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    fontStyle: "italic",
+  },
 });
 
 // Update search header styles
 const searchStyles = StyleSheet.create({
   headerContainer: {
-    position: 'relative',
-    backgroundColor: 'transparent',
-    paddingTop: Platform.OS === 'ios' ? 45 : 12,
+    position: "relative",
+    backgroundColor: "transparent",
+    paddingTop: Platform.OS === "ios" ? 45 : 12,
     paddingBottom: 12,
     // Remove shadows and borders
     borderBottomWidth: 0,
@@ -335,11 +501,11 @@ const searchStyles = StyleSheet.create({
   },
   whiteBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   searchControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     zIndex: 1,
@@ -351,13 +517,13 @@ const searchStyles = StyleSheet.create({
   menuButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   searchContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -367,7 +533,7 @@ const searchStyles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     marginLeft: 8,
-    color: '#333',
+    color: "#333",
     paddingVertical: 0,
   },
   notificationButtonContainer: {
@@ -377,7 +543,7 @@ const searchStyles = StyleSheet.create({
   notificationButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

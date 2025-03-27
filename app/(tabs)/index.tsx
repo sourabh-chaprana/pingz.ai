@@ -1,14 +1,28 @@
-import { ScrollView, StyleSheet, TouchableOpacity, View, Image, Modal, Dimensions, Animated, ActivityIndicator } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
-import { useState, useRef, useEffect } from 'react';
-import React from 'react';
-import { useScrollContext } from '@/app/_layout';
-import { useRouter } from 'expo-router';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTemplatesByCategory, fetchCategories } from '@/src/features/template/templateThunks';
-import { RootState } from '@/src/store';
+import {
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Image,
+  Modal,
+  Dimensions,
+  Animated,
+  ActivityIndicator,
+} from "react-native";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { Ionicons } from "@expo/vector-icons";
+import { useState, useRef, useEffect } from "react";
+import React from "react";
+import { useScrollContext } from "@/app/_layout";
+import { useRouter } from "expo-router";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchTemplatesByCategory,
+  fetchCategories,
+} from "@/src/features/template/templateThunks";
+import { fetchRecentTemplates } from "@/src/features/home/homeThunks";
+import { RootState } from "@/src/store";
 
 // Add more icons & categories data
 // const categoryData = [
@@ -35,65 +49,75 @@ import { RootState } from '@/src/store';
 // Updated whatsNewData with free images
 const whatsNewData = [
   {
-    id: '1',
+    id: "1",
     title: "Illuminate your designs with Ramadan vibes",
     imageUrl: "https://source.unsplash.com/random/500x300/?ramadan",
-    color: "#FFB800"
+    color: "#FFB800",
   },
   {
-    id: '2',
+    id: "2",
     title: "Ugadi celebrations with creative designs",
     imageUrl: "https://source.unsplash.com/random/500x300/?celebration",
-    color: "#4CAF50"
+    color: "#4CAF50",
   },
   {
-    id: '3',
+    id: "3",
     title: "Spring celebrations",
     imageUrl: "https://source.unsplash.com/random/500x300/?spring",
-    color: "#9C27B0"
+    color: "#9C27B0",
   },
 ];
 
 // Add more AI features data
 const aiFeatureData = [
-  { id: '1', text: 'Make me an image', icon: 'help-circle' },
-  { id: '2', text: 'Write my first draft', icon: 'create' },
-  { id: '3', text: 'Design a logo', icon: 'color-palette' },
-  { id: '4', text: 'Create a presentation', icon: 'easel' },
-  { id: '5', text: 'Edit my photo', icon: 'image' },
+  { id: "1", text: "Make me an image", icon: "help-circle" },
+  { id: "2", text: "Write my first draft", icon: "create" },
+  { id: "3", text: "Design a logo", icon: "color-palette" },
+  { id: "4", text: "Create a presentation", icon: "easel" },
+  { id: "5", text: "Edit my photo", icon: "image" },
 ];
 
 // Add recent designs data
 const recentDesignsData = [
   {
-    id: '1',
+    id: "1",
     title: "Photography Portfolio",
     type: "Website",
     imageUrl: "https://source.unsplash.com/random/500x300/?photography",
-    color: "#5D3FD3"
+    color: "#5D3FD3",
   },
   {
-    id: '2',
+    id: "2",
     title: "Business Card",
     type: "Print",
     imageUrl: "https://source.unsplash.com/random/500x300/?business,card",
-    color: "#FF7F50"
+    color: "#FF7F50",
   },
   {
-    id: '3',
+    id: "3",
     title: "Social Media Post",
     type: "Instagram",
     imageUrl: "https://source.unsplash.com/random/500x300/?social,media",
-    color: "#1DA1F2"
+    color: "#1DA1F2",
   },
 ];
 
-function WhatsNewCard({ title, imageUrl, color }: { title: string; imageUrl: string; color: string }) {
+function WhatsNewCard({
+  title,
+  imageUrl,
+  color,
+}: {
+  title: string;
+  imageUrl: string;
+  color: string;
+}) {
   return (
     <TouchableOpacity style={[styles.whatsNewCard, { backgroundColor: color }]}>
-      <ThemedText style={styles.whatsNewTitle}>{title} <Ionicons name="chevron-forward" size={16} color="#fff" /></ThemedText>
-      <Image 
-        source={{ uri: imageUrl }} 
+      <ThemedText style={styles.whatsNewTitle}>
+        {title} <Ionicons name="chevron-forward" size={16} color="#fff" />
+      </ThemedText>
+      <Image
+        source={{ uri: imageUrl }}
         style={styles.whatsNewImage}
         resizeMode="cover"
       />
@@ -101,8 +125,13 @@ function WhatsNewCard({ title, imageUrl, color }: { title: string; imageUrl: str
   );
 }
 
-function OptionsMenu({ visible, onClose, onDelete, onFavorite }: { 
-  visible: boolean; 
+function OptionsMenu({
+  visible,
+  onClose,
+  onDelete,
+  onFavorite,
+}: {
+  visible: boolean;
   onClose: () => void;
   onDelete: () => void;
   onFavorite: () => void;
@@ -114,19 +143,23 @@ function OptionsMenu({ visible, onClose, onDelete, onFavorite }: {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        style={styles.modalOverlay} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
         onPress={onClose}
       >
         <View style={styles.optionsMenu}>
           <TouchableOpacity style={styles.optionItem} onPress={onFavorite}>
             <Ionicons name="star-outline" size={24} color="#333" />
-            <ThemedText style={styles.optionText}>Add to Favorites sourabh-2</ThemedText>
+            <ThemedText style={styles.optionText}>
+              Add to Favorites sourabh-2
+            </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.optionItem} onPress={onDelete}>
             <Ionicons name="trash-outline" size={24} color="#ff4444" />
-            <ThemedText style={[styles.optionText, { color: '#ff4444' }]}>Delete</ThemedText>
+            <ThemedText style={[styles.optionText, { color: "#ff4444" }]}>
+              Delete
+            </ThemedText>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -134,7 +167,15 @@ function OptionsMenu({ visible, onClose, onDelete, onFavorite }: {
   );
 }
 
-function DesignCard({ title, type, imageUrl }: { title: string; type: string; imageUrl?: string }) {
+function DesignCard({
+  title,
+  type,
+  imageUrl,
+}: {
+  title: string;
+  type: string;
+  imageUrl?: string;
+}) {
   const [showOptions, setShowOptions] = useState(false);
 
   const handleDelete = () => {
@@ -152,8 +193,8 @@ function DesignCard({ title, type, imageUrl }: { title: string; type: string; im
       <TouchableOpacity style={styles.designCard}>
         <View style={styles.designPreview}>
           {imageUrl && (
-            <Image 
-              source={{ uri: imageUrl }} 
+            <Image
+              source={{ uri: imageUrl }}
               style={styles.designPreviewImage}
               resizeMode="cover"
             />
@@ -163,7 +204,7 @@ function DesignCard({ title, type, imageUrl }: { title: string; type: string; im
           <ThemedText style={styles.designTitle}>{title}</ThemedText>
           <ThemedText style={styles.designType}>{type}</ThemedText>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.moreButton}
           onPress={() => setShowOptions(true)}
         >
@@ -183,7 +224,7 @@ function DesignCard({ title, type, imageUrl }: { title: string; type: string; im
 function WhatsNewSection() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const screenWidth = Dimensions.get('window').width;
+  const screenWidth = Dimensions.get("window").width;
   const cardWidth = 280; // Width of each card
   const cardMargin = 12; // Margin between cards
   const totalWidth = cardWidth + cardMargin;
@@ -197,13 +238,13 @@ function WhatsNewSection() {
         setCurrentIndex(currentIndex + 1);
         scrollViewRef.current?.scrollTo({
           x: (currentIndex + 1) * totalWidth,
-          animated: true
+          animated: true,
         });
       } else {
         setCurrentIndex(0);
         scrollViewRef.current?.scrollTo({
           x: 0,
-          animated: true
+          animated: true,
         });
       }
     }, 5000); // Scroll every 5 seconds
@@ -244,7 +285,9 @@ function WhatsNewSection() {
             key={index}
             style={[
               styles.dot,
-              { backgroundColor: currentIndex === index ? '#8B3DFF' : '#D8D8D8' }
+              {
+                backgroundColor: currentIndex === index ? "#8B3DFF" : "#D8D8D8",
+              },
             ]}
           />
         ))}
@@ -254,9 +297,14 @@ function WhatsNewSection() {
 }
 
 // Function for category icons
-function CategoryIcon({ icon, name, color, onPress }: { 
-  icon: string; 
-  name: string; 
+function CategoryIcon({
+  icon,
+  name,
+  color,
+  onPress,
+}: {
+  icon: string;
+  name: string;
   color: string;
   onPress: () => void;
 }) {
@@ -282,24 +330,36 @@ function AIFeatureButton({ icon, text }: { icon: string; text: string }) {
   );
 }
 
-// Function for Recent Design Cards in new style
-function RecentDesignCard({ title, type, imageUrl, color }: { 
+// Updated RecentDesignCard component to include navigation and fix image display
+function RecentDesignCard({
+  id,
+  title,
+  description,
+  imageUrl,
+}: {
+  id: string;
   title: string;
-  type: string;
+  description: string;
   imageUrl: string;
-  color: string;
 }) {
+  const router = useRouter();
+
+  const handlePress = () => {
+    // Navigate to the template editor with the template ID
+    router.push(`/template-editor/${id}`);
+  };
+
   return (
-    <TouchableOpacity style={[styles.recentDesignCard, { backgroundColor: color }]}>
-      <View style={styles.recentDesignInfo}>
-        <ThemedText style={styles.recentDesignTitle}>{title}</ThemedText>
-        <ThemedText style={styles.recentDesignType}>{type}</ThemedText>
-      </View>
-      <Image 
-        source={{ uri: imageUrl }} 
+    <TouchableOpacity style={styles.recentDesignCard} onPress={handlePress}>
+      <Image
+        source={{ uri: imageUrl }}
         style={styles.recentDesignImage}
         resizeMode="cover"
       />
+      <View style={styles.recentDesignInfo}>
+        <ThemedText style={styles.recentDesignTitle}>{title}</ThemedText>
+        <ThemedText style={styles.recentDesignType}>{description}</ThemedText>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -309,46 +369,59 @@ export default function HomeScreen() {
   const { scrollY } = useScrollContext();
   const router = useRouter();
   const dispatch = useDispatch();
-  
+
   // Check if user is authenticated
-  const isAuthenticated = useSelector(
-    (state: RootState) => Boolean(state.auth.token)
+  const isAuthenticated = useSelector((state: RootState) =>
+    Boolean(state.auth.token)
   );
-  
+
   // Handle scroll events
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     { useNativeDriver: false }
   );
-  
+
   // Handle category press with auth check
   const handleCategoryPress = (categoryName: string) => {
     if (!isAuthenticated) {
       // If not authenticated, redirect to login
-      router.replace('/login');
+      router.replace("/login");
       return;
     }
-    
+
     // Pre-fetch the data for better UX
     dispatch(fetchTemplatesByCategory(categoryName));
-    
+
     // Navigate to templateCategories with the category name
     router.push(`/templateCategories?category=${categoryName}`);
   };
-  
-  const { 
-    categories, 
-    loadingCategories, 
-    categoriesError 
-  } = useSelector((state: RootState) => state.templates);
+
+  const { categories, loadingCategories, categoriesError } = useSelector(
+    (state: RootState) => state.templates
+  );
+
+  // Get the recent templates from the home state
+  const {
+    recentTemplates,
+    loading: loadingRecentTemplates,
+    error: recentTemplatesError,
+  } = useSelector((state: RootState) => state.home);
+
+  // Add state to track current recent design index
+  const [recentDesignIndex, setRecentDesignIndex] = useState(0);
 
   useEffect(() => {
     dispatch(fetchCategories());
-  }, [dispatch]);
+
+    // Check if user is authenticated before fetching recent templates
+    if (isAuthenticated) {
+      dispatch(fetchRecentTemplates());
+    }
+  }, [dispatch, isAuthenticated]);
 
   return (
     <ThemedView style={styles.container}>
-      <Animated.ScrollView 
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         onScroll={handleScroll}
@@ -356,8 +429,10 @@ export default function HomeScreen() {
       >
         {/* Hero banner with image background */}
         <View style={styles.heroBanner}>
-          <Image 
-            source={{ uri: "https://img.freepik.com/free-photo/vivid-blurred-colorful-wallpaper-background_58702-3773.jpg?t=st=1742381953~exp=1742385553~hmac=02f32b860999373a9284b0063442882c4cf6a6af557bca445c5d88e50487dcda&w=996" }} 
+          <Image
+            source={{
+              uri: "https://img.freepik.com/free-photo/vivid-blurred-colorful-wallpaper-background_58702-3773.jpg?t=st=1742381953~exp=1742385553~hmac=02f32b860999373a9284b0063442882c4cf6a6af557bca445c5d88e50487dcda&w=996",
+            }}
             style={styles.heroBannerBackground}
             resizeMode="cover"
           />
@@ -375,8 +450,8 @@ export default function HomeScreen() {
           ) : categoriesError ? (
             <ThemedText style={styles.errorText}>{categoriesError}</ThemedText>
           ) : (
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesScrollContent}
             >
@@ -395,8 +470,8 @@ export default function HomeScreen() {
 
         {/* AI Features section - now scrollable */}
         <View style={styles.aiFeaturesSection}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.aiFeaturesScrollContent}
           >
@@ -435,14 +510,14 @@ export default function HomeScreen() {
                 key={index}
                 style={[
                   styles.dot,
-                  { backgroundColor: index === 0 ? '#8B3DFF' : '#D8D8D8' }
+                  { backgroundColor: index === 0 ? "#8B3DFF" : "#D8D8D8" },
                 ]}
               />
             ))}
           </View>
         </View>
 
-        {/* Recent designs section - now with card style like What's New */}
+        {/* Recent designs section - now using API data */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recent designs</ThemedText>
@@ -450,33 +525,64 @@ export default function HomeScreen() {
               <ThemedText style={styles.seeAll}>See all</ThemedText>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.recentDesignsScroll}
-            contentContainerStyle={styles.recentDesignsScrollContent}
-          >
-            {recentDesignsData.map((item) => (
-              <RecentDesignCard
-                key={item.id}
-                title={item.title}
-                type={item.type}
-                imageUrl={item.imageUrl}
-                color={item.color}
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.paginationDots}>
-            {recentDesignsData.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.dot,
-                  { backgroundColor: index === 0 ? '#8B3DFF' : '#D8D8D8' }
-                ]}
-              />
-            ))}
-          </View>
+
+          {loadingRecentTemplates ? (
+            <ActivityIndicator
+              size="large"
+              color="#8B3DFF"
+              style={{ marginTop: 10 }}
+            />
+          ) : recentTemplatesError ? (
+            <ThemedText style={styles.errorText}>
+              {recentTemplatesError}
+            </ThemedText>
+          ) : recentTemplates.length === 0 ? (
+            <ThemedText style={styles.noDataText}>
+              No recent designs found
+            </ThemedText>
+          ) : (
+            <>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.recentDesignsScroll}
+                contentContainerStyle={styles.recentDesignsScrollContent}
+                onScroll={(event) => {
+                  // Add scroll handler to update active dot
+                  const scrollX = event.nativeEvent.contentOffset.x;
+                  const itemWidth = 272; // card width (260) + margin (12)
+                  const currentIndex = Math.round(scrollX / itemWidth);
+                  setRecentDesignIndex(currentIndex);
+                }}
+                scrollEventThrottle={16}
+                pagingEnabled
+              >
+                {recentTemplates.slice(0, 5).map((template) => (
+                  <RecentDesignCard
+                    key={template.id}
+                    id={template.id}
+                    title={template.templateName}
+                    description={template.description || "Design"}
+                    imageUrl={template.url}
+                  />
+                ))}
+              </ScrollView>
+              <View style={styles.paginationDots}>
+                {recentTemplates.slice(0, 5).map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      {
+                        backgroundColor:
+                          recentDesignIndex === index ? "#8B3DFF" : "#D8D8D8",
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
+          )}
         </View>
       </Animated.ScrollView>
     </ThemedView>
@@ -486,7 +592,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   scrollContent: {
     paddingTop: 16, // Proper spacing from the top
@@ -496,8 +602,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 24,
     borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -508,16 +614,16 @@ const styles = StyleSheet.create({
   },
   heroTextContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(85, 60, 180, 0.3)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(85, 60, 180, 0.3)",
   },
   heroText: {
     fontSize: 26,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
@@ -529,19 +635,19 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   categoryItem: {
-    alignItems: 'center',
+    alignItems: "center",
     marginRight: 20,
     width: 72,
   },
   categoryIconContainer: {
     width: 56,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 28,
-    backgroundColor: '#FF4D4D',
+    backgroundColor: "#FF4D4D",
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -549,7 +655,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
   },
   aiFeaturesSection: {
     marginBottom: 24,
@@ -559,15 +665,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   aiFeatureButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f2f0f7',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f2f0f7",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 22,
     marginRight: 12,
     width: 180,
-    shadowColor: '#8B3DFF',
+    shadowColor: "#8B3DFF",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -578,29 +684,29 @@ const styles = StyleSheet.create({
   },
   aiFeatureText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
   },
   sectionContainer: {
     marginBottom: 24,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 16,
     marginBottom: 12,
   },
   seeAll: {
-    color: '#8B3DFF',
+    color: "#8B3DFF",
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   whatsNewScroll: {
     paddingLeft: 16,
@@ -614,36 +720,36 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginRight: 12,
-    overflow: 'hidden',
-    justifyContent: 'flex-start',
-    shadowColor: '#000',
+    overflow: "hidden",
+    justifyContent: "flex-start",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
   },
   whatsNewTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
-    maxWidth: '80%',
+    fontWeight: "bold",
+    maxWidth: "80%",
     zIndex: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   whatsNewImage: {
-    width: '70%',
-    height: '90%',
-    position: 'absolute',
+    width: "70%",
+    height: "90%",
+    position: "absolute",
     bottom: 0,
     right: -20,
     opacity: 0.85,
   },
   paginationDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 12,
   },
   dot: {
@@ -656,13 +762,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   designCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -671,13 +777,13 @@ const styles = StyleSheet.create({
   designPreview: {
     width: 60,
     height: 60,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   designPreviewImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   designInfo: {
     flex: 1,
@@ -685,11 +791,11 @@ const styles = StyleSheet.create({
   },
   designTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   designType: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
     marginTop: 4,
   },
   moreButton: {
@@ -697,20 +803,20 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   optionsMenu: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 8,
-    width: '80%',
+    width: "80%",
     maxWidth: 300,
   },
   optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderRadius: 8,
   },
@@ -728,53 +834,62 @@ const styles = StyleSheet.create({
     width: 260,
     height: 140,
     borderRadius: 16,
-    padding: 16,
+    padding: 0, // Remove padding to allow image to fill
     marginRight: 12,
-    overflow: 'hidden',
-    justifyContent: 'flex-start',
-    shadowColor: '#000',
+    overflow: "hidden",
+    justifyContent: "flex-end", // Changed to flex-end to position content at bottom
+    backgroundColor: "#fff",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
+    position: "relative", // Make sure this is set for absolute positioning of children
+  },
+  recentDesignImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
   },
   recentDesignInfo: {
     zIndex: 1,
+    padding: 16, // Add padding to the info container instead of the card
+    width: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // Add a semi-transparent background
   },
   recentDesignTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
-    maxWidth: '80%',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    fontWeight: "bold",
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   recentDesignType: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
     opacity: 0.9,
     marginTop: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
-  },
-  recentDesignImage: {
-    width: '70%',
-    height: '90%',
-    position: 'absolute',
-    bottom: 0,
-    right: -20,
-    opacity: 0.85,
   },
   section: {
     marginBottom: 24,
   },
   errorText: {
-    color: '#ff4444',
+    color: "#ff4444",
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginTop: 20,
+  },
+  noDataText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 20,
+    color: "#666",
   },
 });
