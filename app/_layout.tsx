@@ -19,6 +19,7 @@ import {
   Animated,
   ActivityIndicator,
   Keyboard,
+  ScrollView,
 } from "react-native";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -37,6 +38,9 @@ import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchRecentTemplates } from "@/src/features/home/homeThunks";
 import { useRouter } from "expo-router";
+import { searchTemplates } from "@/src/features/search/searchThunks";
+import { clearSearch } from "@/src/features/search/searchSlice";
+import SearchResults from "@/app/SearchResult";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -207,6 +211,8 @@ function SearchHeader({ navigation }: { navigation: any }) {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
   const [searchText, setSearchText] = useState("");
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   // Get the scroll position from context
   const { scrollY } = useScrollContext();
@@ -252,13 +258,21 @@ function SearchHeader({ navigation }: { navigation: any }) {
   const handleSearchCancel = () => {
     setSearchText("");
     setIsSearchActive(false);
+    dispatch(clearSearch());
     Keyboard.dismiss();
   };
 
   const handleSearchSubmit = () => {
-    // Implement search functionality here
-    console.log("Searching for:", searchText);
+    if (searchText.trim()) {
+      dispatch(searchTemplates(searchText.trim()));
+    }
     Keyboard.dismiss();
+  };
+
+  const handleClearSearch = () => {
+    setSearchText("");
+    dispatch(clearSearch());
+    searchInputRef.current?.focus();
   };
 
   // If not authenticated, return null or an empty view
@@ -273,7 +287,7 @@ function SearchHeader({ navigation }: { navigation: any }) {
         isSearchActive && searchStyles.searchActiveHeader,
       ]}
     >
-      {!isSearchActive && (
+      {!isSearchActive ? (
         <>
           {/* Background Image - shown when not scrolled and search not active */}
           <Animated.View
@@ -298,19 +312,9 @@ function SearchHeader({ navigation }: { navigation: any }) {
               { opacity: headerBackgroundOpacity },
             ]}
           />
-        </>
-      )}
 
-      {/* Search Controls */}
-      <View
-        style={[
-          searchStyles.searchControls,
-          isSearchActive && searchStyles.searchActiveControls,
-        ]}
-      >
-        {!isSearchActive ? (
-          // Normal header layout
-          <>
+          {/* Normal header layout */}
+          <View style={searchStyles.searchControls}>
             <Animated.View
               style={[searchStyles.menuButtonContainer, searchBarStyle]}
             >
@@ -347,10 +351,13 @@ function SearchHeader({ navigation }: { navigation: any }) {
                 <Ionicons name="notifications-outline" size={24} color="#333" />
               </TouchableOpacity>
             </Animated.View>
-          </>
-        ) : (
-          // Search active layout - update this to match Canva design
-          <View style={searchStyles.searchActiveContainer}>
+          </View>
+        </>
+      ) : (
+        // Search active layout with full screen search UI
+        <View style={searchStyles.searchFullContainer}>
+          {/* Search bar with back button */}
+          <View style={searchStyles.searchBarContainer}>
             <View style={searchStyles.searchActiveInputContainer}>
               <TouchableOpacity
                 style={searchStyles.backButton}
@@ -371,10 +378,22 @@ function SearchHeader({ navigation }: { navigation: any }) {
                 onSubmitEditing={handleSearchSubmit}
                 returnKeyType="search"
               />
+
+              {searchText.length > 0 && (
+                <TouchableOpacity
+                  style={searchStyles.clearButton}
+                  onPress={handleClearSearch}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
-        )}
-      </View>
+
+          {/* Dedicated search results component */}
+          <SearchResults query={searchText} />
+        </View>
+      )}
     </View>
   );
 }
@@ -572,15 +591,16 @@ const searchStyles = StyleSheet.create({
   headerContainer: {
     position: "relative",
     backgroundColor: "transparent",
-    paddingTop: Platform.OS === "ios" ? 45 : 35, // Increased for Android to avoid status bar overlap
+    paddingTop: Platform.OS === "ios" ? 45 : 35,
     paddingBottom: 12,
     borderBottomWidth: 0,
     zIndex: 1000,
   },
   searchActiveHeader: {
     backgroundColor: "#fff",
-    paddingTop: Platform.OS === "ios" ? 45 : 35, // Consistent spacing when active
-    paddingBottom: 8,
+    paddingTop: Platform.OS === "ios" ? 45 : 35,
+    paddingBottom: 0, // Remove bottom padding in search mode
+    height: "100%", // Make the header container take full height
   },
   backgroundImageContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -604,33 +624,11 @@ const searchStyles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 8,
   },
-  searchActiveContainer: {
-    width: "100%",
-    paddingHorizontal: 4,
-  },
-  searchActiveInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 24,
-    paddingLeft: 6,
-    paddingRight: 12,
-    overflow: "hidden",
-  },
   menuButtonContainer: {
     borderRadius: 22,
     marginRight: 8,
   },
   menuButton: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  backButton: {
     width: 44,
     height: 44,
     justifyContent: "center",
@@ -645,20 +643,6 @@ const searchStyles = StyleSheet.create({
     paddingVertical: 10,
     marginHorizontal: 8,
   },
-  searchActiveInput: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: Platform.OS === "ios" ? 12 : 10,
-    color: "#333",
-    height: 44,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    marginLeft: 8,
-    color: "#333",
-    paddingVertical: 0,
-  },
   notificationButtonContainer: {
     borderRadius: 22,
     marginLeft: 8,
@@ -668,5 +652,53 @@ const searchStyles = StyleSheet.create({
     height: 44,
     justifyContent: "center",
     alignItems: "center",
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 8,
+    color: "#333",
+    paddingVertical: 0,
+  },
+  // Full screen search container
+  searchFullContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#fff",
+  },
+  // Rename this to avoid duplication with 'searchActiveHeader'
+  searchBarContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 0,
+  },
+  searchActiveInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 24,
+    paddingLeft: 6,
+    paddingRight: 12,
+    overflow: "hidden",
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchActiveInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+    color: "#333",
+    height: 44,
+  },
+  clearButton: {
+    padding: 8,
   },
 });
