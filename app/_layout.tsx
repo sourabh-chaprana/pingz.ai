@@ -163,18 +163,7 @@ function CustomDrawerContent(props: any) {
         label="Home"
         onPress={() => props.navigation.navigate("(tabs)")}
       />
-      {/* <MenuItem 
-        icon="apps-outline" 
-        label="Brand" 
-        showChevron 
-        onPress={() => props.navigation.navigate('brand')}
-      />
-      <MenuItem 
-        icon="grid-outline" 
-        label="Apps" 
-        showChevron 
-        onPress={() => props.navigation.navigate('apps')}
-      /> */}
+
       <MenuItem
         icon="bulb-outline"
         label="Dream Lab"
@@ -186,9 +175,9 @@ function CustomDrawerContent(props: any) {
         onPress={() => props.navigation.navigate("ask")}
       />
       <MenuItem
-        icon="trash-outline"
-        label="Trash"
-        onPress={() => props.navigation.navigate("trash")}
+        icon="help-circle-outline"
+        label="Account"
+        onPress={() => props.navigation.navigate("account")}
       />
 
       {/* Add divider before Recent designs section */}

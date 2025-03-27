@@ -5,11 +5,13 @@ import templateReducer from "../features/template/templateSlice";
 import homeReducer from "../features/home/homeSlice";
 import searchReducer from "../features/search/searchSlice";
 
+import accountReducer from "../features/accounts/accountSlice";
 const rootReducer = combineReducers({
   auth: authReducer,
   templates: templateReducer,
   home: homeReducer,
   search: searchReducer,
+  account: accountReducer,
   //   user: userReducer,
 });
 
