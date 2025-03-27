@@ -7,7 +7,7 @@ import { useFonts } from "expo-font";
 import { Drawer } from "expo-router/drawer";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Image,
@@ -18,6 +18,7 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -203,6 +204,9 @@ function SearchHeader({ navigation }: { navigation: any }) {
     (state: RootState) => state.auth.isAuthenticated
   );
   const route = useRoute();
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
+  const [searchText, setSearchText] = useState("");
 
   // Get the scroll position from context
   const { scrollY } = useScrollContext();
@@ -215,7 +219,6 @@ function SearchHeader({ navigation }: { navigation: any }) {
   });
 
   // Create animated values for the search bar and button styles
-  // when scrolling (add subtle shadow/border when background is white)
   const searchBarStyle = {
     backgroundColor: "rgba(255, 255, 255, 0.85)",
     shadowColor: "#000",
@@ -236,69 +239,141 @@ function SearchHeader({ navigation }: { navigation: any }) {
     borderColor: "rgba(0, 0, 0, 0.05)",
   };
 
+  const handleSearchFocus = () => {
+    setIsSearchActive(true);
+  };
+
+  const handleSearchBlur = () => {
+    if (!searchText) {
+      setIsSearchActive(false);
+    }
+  };
+
+  const handleSearchCancel = () => {
+    setSearchText("");
+    setIsSearchActive(false);
+    Keyboard.dismiss();
+  };
+
+  const handleSearchSubmit = () => {
+    // Implement search functionality here
+    console.log("Searching for:", searchText);
+    Keyboard.dismiss();
+  };
+
   // If not authenticated, return null or an empty view
   if (!isAuthenticated) {
     return null;
   }
 
   return (
-    <View style={searchStyles.headerContainer}>
-      {/* Background Image - shown when not scrolled */}
-      <Animated.View
-        style={[
-          searchStyles.backgroundImageContainer,
-          { opacity: Animated.subtract(1, headerBackgroundOpacity) },
-        ]}
-      >
-        <Image
-          source={{
-            uri: "https://img.freepik.com/free-photo/blurred-blue-sky-sea-well-use-as-blur-backdrop-ocean-concept-blurry-pastel-colored-sunshine_1258-239.jpg?t=st=1742402532~exp=1742406132~hmac=791461f45fbda633c20276a20237f9c7a1a8047b6463cf35f2a606a0bf6abe1d&w=996",
-          }}
-          style={searchStyles.backgroundImage}
-          resizeMode="cover"
-        />
-      </Animated.View>
+    <View
+      style={[
+        searchStyles.headerContainer,
+        isSearchActive && searchStyles.searchActiveHeader,
+      ]}
+    >
+      {!isSearchActive && (
+        <>
+          {/* Background Image - shown when not scrolled and search not active */}
+          <Animated.View
+            style={[
+              searchStyles.backgroundImageContainer,
+              { opacity: Animated.subtract(1, headerBackgroundOpacity) },
+            ]}
+          >
+            <Image
+              source={{
+                uri: "https://img.freepik.com/free-photo/blurred-blue-sky-sea-well-use-as-blur-backdrop-ocean-concept-blurry-pastel-colored-sunshine_1258-239.jpg?t=st=1742402532~exp=1742406132~hmac=791461f45fbda633c20276a20237f9c7a1a8047b6463cf35f2a606a0bf6abe1d&w=996",
+              }}
+              style={searchStyles.backgroundImage}
+              resizeMode="cover"
+            />
+          </Animated.View>
 
-      {/* White background - shown when scrolled */}
-      <Animated.View
-        style={[
-          searchStyles.whiteBackground,
-          { opacity: headerBackgroundOpacity },
-        ]}
-      />
+          {/* White background - shown when scrolled */}
+          <Animated.View
+            style={[
+              searchStyles.whiteBackground,
+              { opacity: headerBackgroundOpacity },
+            ]}
+          />
+        </>
+      )}
 
       {/* Search Controls */}
-      <View style={searchStyles.searchControls}>
-        <Animated.View
-          style={[searchStyles.menuButtonContainer, searchBarStyle]}
-        >
-          <TouchableOpacity
-            style={searchStyles.menuButton}
-            onPress={() => navigation.toggleDrawer()}
-          >
-            <Ionicons name="menu-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        </Animated.View>
+      <View
+        style={[
+          searchStyles.searchControls,
+          isSearchActive && searchStyles.searchActiveControls,
+        ]}
+      >
+        {!isSearchActive ? (
+          // Normal header layout
+          <>
+            <Animated.View
+              style={[searchStyles.menuButtonContainer, searchBarStyle]}
+            >
+              <TouchableOpacity
+                style={searchStyles.menuButton}
+                onPress={() => navigation.toggleDrawer()}
+              >
+                <Ionicons name="menu-outline" size={24} color="#333" />
+              </TouchableOpacity>
+            </Animated.View>
 
-        <Animated.View style={[searchStyles.searchContainer, searchBarStyle]}>
-          <Ionicons name="search" size={20} color="#666" />
-          <TextInput
-            placeholder="Search your content and Canva's"
-            placeholderTextColor="#666"
-            style={searchStyles.searchInput}
-          />
-        </Animated.View>
+            <Animated.View
+              style={[searchStyles.searchContainer, searchBarStyle]}
+            >
+              <Ionicons name="search" size={20} color="#666" />
+              <TextInput
+                ref={searchInputRef}
+                placeholder="Search your content and Canva's"
+                placeholderTextColor="#666"
+                style={searchStyles.searchInput}
+                onFocus={handleSearchFocus}
+                onChangeText={setSearchText}
+                value={searchText}
+              />
+            </Animated.View>
 
-        <Animated.View
-          style={[searchStyles.notificationButtonContainer, searchBarStyle]}
-        >
-          <TouchableOpacity
-            style={searchStyles.notificationButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        </Animated.View>
+            <Animated.View
+              style={[searchStyles.notificationButtonContainer, searchBarStyle]}
+            >
+              <TouchableOpacity
+                style={searchStyles.notificationButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="notifications-outline" size={24} color="#333" />
+              </TouchableOpacity>
+            </Animated.View>
+          </>
+        ) : (
+          // Search active layout - update this to match Canva design
+          <View style={searchStyles.searchActiveContainer}>
+            <View style={searchStyles.searchActiveInputContainer}>
+              <TouchableOpacity
+                style={searchStyles.backButton}
+                onPress={handleSearchCancel}
+              >
+                <Ionicons name="arrow-back" size={24} color="#333" />
+              </TouchableOpacity>
+
+              <TextInput
+                ref={searchInputRef}
+                placeholder="Search your content and Canva's"
+                placeholderTextColor="#666"
+                style={searchStyles.searchActiveInput}
+                autoFocus={true}
+                onBlur={handleSearchBlur}
+                onChangeText={setSearchText}
+                value={searchText}
+                onSubmitEditing={handleSearchSubmit}
+                returnKeyType="search"
+              />
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -497,10 +572,15 @@ const searchStyles = StyleSheet.create({
   headerContainer: {
     position: "relative",
     backgroundColor: "transparent",
-    paddingTop: Platform.OS === "ios" ? 45 : 12,
+    paddingTop: Platform.OS === "ios" ? 45 : 35, // Increased for Android to avoid status bar overlap
     paddingBottom: 12,
-    // Remove shadows and borders
     borderBottomWidth: 0,
+    zIndex: 1000,
+  },
+  searchActiveHeader: {
+    backgroundColor: "#fff",
+    paddingTop: Platform.OS === "ios" ? 45 : 35, // Consistent spacing when active
+    paddingBottom: 8,
   },
   backgroundImageContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -520,11 +600,37 @@ const searchStyles = StyleSheet.create({
     paddingVertical: 8,
     zIndex: 1,
   },
+  searchActiveControls: {
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  searchActiveContainer: {
+    width: "100%",
+    paddingHorizontal: 4,
+  },
+  searchActiveInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 24,
+    paddingLeft: 6,
+    paddingRight: 12,
+    overflow: "hidden",
+  },
   menuButtonContainer: {
     borderRadius: 22,
     marginRight: 8,
   },
   menuButton: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backButton: {
     width: 44,
     height: 44,
     justifyContent: "center",
@@ -538,6 +644,13 @@ const searchStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginHorizontal: 8,
+  },
+  searchActiveInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
+    color: "#333",
+    height: 44,
   },
   searchInput: {
     flex: 1,
