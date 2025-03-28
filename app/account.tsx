@@ -120,43 +120,102 @@ export default function AccountScreen() {
 
   // Handle picking an image
   const pickImage = (type: ImageType) => {
-    // Create a hidden file input element
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.style.display = 'none';
-    
-    // Handle file selection
-    fileInput.onchange = (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
+    // Check if we're running on web or native
+    if (Platform.OS === 'web') {
+      // Create a hidden file input element
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.style.display = 'none';
       
-      // Store the selected file based on image type
-      switch (type) {
-        case 'profile':
-          setProfileFile(file);
-          setProfilePreview(URL.createObjectURL(file));
-          setProfileFileName(file.name);
-          break;
-        case 'header':
-          setHeaderFile(file);
-          setHeaderPreview(URL.createObjectURL(file));
-          setHeaderFileName(file.name);
-          break;
-        case 'footer':
-          setFooterFile(file);
-          setFooterPreview(URL.createObjectURL(file));
-          setFooterFileName(file.name);
-          break;
+      // Handle file selection
+      fileInput.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // Store the selected file based on image type
+        switch (type) {
+          case 'profile':
+            setProfileFile(file);
+            setProfilePreview(URL.createObjectURL(file));
+            setProfileFileName(file.name);
+            break;
+          case 'header':
+            setHeaderFile(file);
+            setHeaderPreview(URL.createObjectURL(file));
+            setHeaderFileName(file.name);
+            break;
+          case 'footer':
+            setFooterFile(file);
+            setFooterPreview(URL.createObjectURL(file));
+            setFooterFileName(file.name);
+            break;
+        }
+        
+        // Clean up
+        document.body.removeChild(fileInput);
+      };
+      
+      // Add to DOM and trigger click
+      document.body.appendChild(fileInput);
+      fileInput.click();
+    } else {
+      // Use ImagePicker for native mobile platforms
+      if (!ImagePicker) {
+        Alert.alert('Error', 'Image picker is not available on this device');
+        return;
       }
       
-      // Clean up
-      document.body.removeChild(fileInput);
-    };
-    
-    // Add to DOM and trigger click
-    document.body.appendChild(fileInput);
-    fileInput.click();
+      (async () => {
+        try {
+          // Request permission
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission required', 'Please grant camera roll permissions to upload images');
+            return;
+          }
+          
+          // Launch image picker
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+          });
+          
+          if (!result.canceled && result.assets && result.assets[0]) {
+            const selectedAsset = result.assets[0];
+            const uri = selectedAsset.uri;
+            
+            // Get file info
+            const fileInfo = await FileSystem.getInfoAsync(uri);
+            const fileName = uri.split('/').pop() || 'image.jpg';
+            
+            // Update state based on type
+            switch (type) {
+              case 'profile':
+                setProfilePreview(uri);
+                setProfileFileName(fileName);
+                setProfileImagePath(uri);
+                break;
+              case 'header':
+                setHeaderPreview(uri);
+                setHeaderFileName(fileName);
+                setHeaderImagePath(uri);
+                break;
+              case 'footer':
+                setFooterPreview(uri);
+                setFooterFileName(fileName);
+                setFooterImagePath(uri);
+                break;
+            }
+          }
+        } catch (error) {
+          console.error('Error picking image:', error);
+          Alert.alert('Error', 'Failed to pick image');
+        }
+      })();
+    }
   };
 
   // Convert a File object to base64
@@ -175,7 +234,7 @@ export default function AccountScreen() {
   };
 
   // Handle form submission with all data including images
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Create a FormData object
     const formData = new FormData();
     
@@ -188,28 +247,75 @@ export default function AccountScreen() {
       formData.append('anniversaryDate', anniversaryDate);
     }
     
-    // Add image files if selected
-    if (profileFile) {
-      formData.append('profile', profileFile);
-      console.log('Adding profile image:', profileFile.name);
-    }
-    
-    if (headerFile) {
-      formData.append('header', headerFile);
-      console.log('Adding header image:', headerFile.name);
-    }
-    
-    if (footerFile) {
-      formData.append('footer', footerFile);
-      console.log('Adding footer image:', footerFile.name);
+    // Handle image uploads based on platform
+    if (Platform.OS === 'web') {
+      // Web platform - use File objects
+      if (profileFile) {
+        formData.append('profile', profileFile);
+        console.log('Adding profile image:', profileFile.name);
+      }
+      
+      if (headerFile) {
+        formData.append('header', headerFile);
+        console.log('Adding header image:', headerFile.name);
+      }
+      
+      if (footerFile) {
+        formData.append('footer', footerFile);
+        console.log('Adding footer image:', footerFile.name);
+      }
+    } else {
+      // Native platforms - use URIs and create file objects
+      if (profileImagePath) {
+        const fileName = profileImagePath.split('/').pop() || 'profile.jpg';
+        const fileType = fileName.split('.').pop().toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
+        
+        // Create a file object for React Native
+        formData.append('profile', {
+          uri: profileImagePath,
+          name: fileName,
+          type: fileType,
+        } as any);
+        console.log('Adding profile image (native):', fileName);
+      }
+      
+      if (headerImagePath) {
+        const fileName = headerImagePath.split('/').pop() || 'header.jpg';
+        const fileType = fileName.split('.').pop().toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
+        
+        formData.append('header', {
+          uri: headerImagePath,
+          name: fileName,
+          type: fileType,
+        } as any);
+        console.log('Adding header image (native):', fileName);
+      }
+      
+      if (footerImagePath) {
+        const fileName = footerImagePath.split('/').pop() || 'footer.jpg';
+        const fileType = fileName.split('.').pop().toLowerCase() === 'png' ? 'image/png' : 'image/jpeg';
+        
+        formData.append('footer', {
+          uri: footerImagePath,
+          name: fileName,
+          type: fileType,
+        } as any);
+        console.log('Adding footer image (native):', fileName);
+      }
     }
     
     // Log the form data entries for debugging
-    for (const pair of formData.entries()) {
-      console.log(pair[0], pair[1]);
+    console.log('Form data being sent:');
+    if (Platform.OS === 'web') {
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+    } else {
+      // On React Native, we can't iterate through FormData entries
+      // So we just log that we're sending the form data
+      console.log('Sending form data with images (platform specific)');
     }
     
-    // Send the FormData
     // Send the FormData object directly
     dispatch(updateUserData(formData));
   };

@@ -641,30 +641,79 @@ export default function TemplateEditor() {
       <ScrollView style={styles.scrollView}>
         {/* Preview Section */}
         <View style={styles.previewContainer}>
-          {generatingImage ? (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#8B3DFF" />
-              <ThemedText style={styles.loadingText}>Generating image...</ThemedText>
-            </View>
-          ) : generatedImage ? (
-            <Image
-              source={{ uri: generatedImage }}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <Image
-              source={{ uri: currentTemplate.url || 'https://via.placeholder.com/300x500' }}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
-          )}
+          <View style={styles.previewImageContainer}>
+            {generatingImage ? (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color="#8B3DFF" />
+                <ThemedText style={styles.loadingText}>Generating image...</ThemedText>
+              </View>
+            ) : generatedImage ? (
+              <Image
+                source={{ uri: generatedImage }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <Image
+                source={{ uri: currentTemplate.url || 'https://via.placeholder.com/300x500' }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+            )}
+            
+            {generateImageError && (
+              <View style={styles.errorContainer}>
+                <ThemedText style={styles.errorText}>{generateImageError}</ThemedText>
+              </View>
+            )}
+          </View>
           
-          {generateImageError && (
-            <View style={styles.errorContainer}>
-              <ThemedText style={styles.errorText}>{generateImageError}</ThemedText>
+          {/* Action buttons fixed at the bottom */}
+          <View style={styles.previewActionsContainer}>
+            <TouchableOpacity 
+              style={styles.generateButton} 
+              onPress={handleGenerateImage}
+            >
+              <ThemedText style={styles.generateButtonText}>Generate Image</ThemedText>
+            </TouchableOpacity>
+
+            {/* Action Icons */}
+            <View style={styles.actionIcons}>
+              <TouchableOpacity 
+                style={[
+                  styles.iconButton,
+                  !generatedImage && styles.iconButtonDisabled
+                ]} 
+                onPress={handleDownload}
+                disabled={!generatedImage}
+              >
+                <Ionicons 
+                  name="download-outline" 
+                  size={24} 
+                  color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
+                />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.iconButton,
+                  !generatedImage && styles.iconButtonDisabled
+                ]} 
+                onPress={handleShare}
+                disabled={!generatedImage}
+              >
+                <Ionicons 
+                  name="share-social-outline" 
+                  size={24} 
+                  color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
+                />
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Bulk')}>
+                <Ionicons name="albums-outline" size={24} color="#8B3DFF" />
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
         </View>
         
         {/* Template Variables Form */}
@@ -729,50 +778,6 @@ export default function TemplateEditor() {
               </View>
             </View>
           )}
-          
-          <TouchableOpacity 
-            style={styles.generateButton} 
-            onPress={handleGenerateImage}
-          >
-            <ThemedText style={styles.generateButtonText}>Generate Image</ThemedText>
-          </TouchableOpacity>
-
-          {/* Action Icons */}
-          <View style={styles.actionIcons}>
-            <TouchableOpacity 
-              style={[
-                styles.iconButton,
-                !generatedImage && styles.iconButtonDisabled
-              ]} 
-              onPress={handleDownload}
-              disabled={!generatedImage}
-            >
-              <Ionicons 
-                name="download-outline" 
-                size={24} 
-                color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[
-                styles.iconButton,
-                !generatedImage && styles.iconButtonDisabled
-              ]} 
-              onPress={handleShare}
-              disabled={!generatedImage}
-            >
-              <Ionicons 
-                name="share-social-outline" 
-                size={24} 
-                color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Bulk')}>
-              <Ionicons name="albums-outline" size={24} color="#8B3DFF" />
-            </TouchableOpacity>
-          </View>
         </View>
         
         {/* Similar Templates Section */}
@@ -872,8 +877,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
     backgroundColor: '#fff',
     elevation: 2,
     shadowColor: '#000',
@@ -895,8 +900,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     margin: 16,
-    height: 300,
-    justifyContent: 'center',
+    height: 380,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -904,9 +911,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  previewImageContainer: {
+    width: '100%',
+    height: 250,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   previewImage: {
     width: '100%',
     height: '100%',
+    objectFit: 'contain',
   },
   formContainer: {
     backgroundColor: '#fff',
@@ -951,11 +966,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   generateButton: {
+    width: '85%',
+    margin: 'auto',
     backgroundColor: '#8B3DFF',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 16,
+    marginBottom: 6,
     elevation: 2,
   },
   generateButtonText: {
@@ -1023,6 +1040,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 5,
   },
   errorContainer: {
     position: 'absolute',
@@ -1151,13 +1169,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
-    gap: 24,
+    width: '100%',
   },
   iconButton: {
     padding: 8,
     borderRadius: 20,
     backgroundColor: '#F8F9FA',
+    marginHorizontal: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1211,5 +1229,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e4e8',
+  },
+  previewActionsContainer: {
+    width: '100%',
+    minHeight: 80,
+    marginTop: 'auto',
+    paddingTop: 10,
   },
 }); 
