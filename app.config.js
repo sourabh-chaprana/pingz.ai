@@ -30,6 +30,7 @@ export default {
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "MEDIA_LIBRARY",
+        "ACCESS_MEDIA_LOCATION"
       ],
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
