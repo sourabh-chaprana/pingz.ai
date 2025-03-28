@@ -115,48 +115,12 @@ export const fetchTemplateById = (templateId: string) => {
 };
 
 // Generate image
-export const generateImage = (currentTemplate: any, templateVariables: any) => {
+export const generateImage = (payload) => {
   return async (dispatch: AppDispatch) => {
     try {
       dispatch(generateImageStart());
 
-      // Prepare text overlays
-      const textOverlays = currentTemplate.templateVariables
-        .filter(variable => variable.name.toLowerCase() !== 'image')
-        .map(variable => ({
-          text: templateVariables[variable.name] || "",
-          width: parseInt(variable.posWidth) || 300,
-          height: parseInt(variable.posHeight) || 150,
-          x: parseInt(variable.x) || 120,
-          y: parseInt(variable.y) || 250,
-          font: variable.font || "Arial",
-          fontFamily: variable.fontFamily || "https://pingz.ai/api/template/fonts/Arial.ttf",
-          fontSize: variable.fontSize || "30",
-          color: variable.color || "#000000"
-        }));
-
-      // Prepare image overlays
-      const imageOverlays = [];
-      const imageVariable = currentTemplate.templateVariables.find(
-        variable => variable.name.toLowerCase() === 'image'
-      );
-
-      if (imageVariable && templateVariables['image']) {
-        imageOverlays.push({
-          imageUrl: templateVariables['image'],
-          width: parseInt(imageVariable.posWidth) || 0,
-          height: parseInt(imageVariable.posHeight) || 0,
-          x: parseInt(imageVariable.x) || 10,
-          y: parseInt(imageVariable.y) || 10
-        });
-      }
-
-      const payload = {
-        imageUrl: currentTemplate.url,
-        mediaType: currentTemplate.mediaType || "image",
-        textOverlays: textOverlays,
-        imageOverlays: imageOverlays
-      };
+      console.log('API Payload:', JSON.stringify(payload, null, 2));
 
       // Different handling for web and mobile platforms
       if (Platform.OS === 'web') {
@@ -177,7 +141,7 @@ export const generateImage = (currentTemplate: any, templateVariables: any) => {
             'Accept': 'image/png;base64',
             'Content-Type': 'application/json'
           },
-          responseType: 'arraybuffer'  // Changed from 'text' to 'arraybuffer'
+          responseType: 'arraybuffer'
         });
 
         // Convert array buffer to base64

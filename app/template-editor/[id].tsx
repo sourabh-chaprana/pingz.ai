@@ -7,7 +7,8 @@ import {
   TextInput, 
   ScrollView, 
   ActivityIndicator,
-  Platform
+  Platform,
+  Switch
 } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -33,6 +34,7 @@ import api from '@/src/services/api';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
+import { fetchUserData } from '@/src/features/accounts/accountsThunk';
 
 export default function TemplateEditor() {
   const router = useRouter();
@@ -60,10 +62,18 @@ export default function TemplateEditor() {
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [showDownloadSuccess, setShowDownloadSuccess] = useState(false);
   const [showPermissionError, setShowPermissionError] = useState(false);
-  
+  const [addHeader, setAddHeader] = useState(false);
+  const [addFooter, setAddFooter] = useState(false);
+  const [headerImage, setHeaderImage] = useState<string | null>(null);
+  const [footerImage, setFooterImage] = useState<string | null>(null);
+
+  // Add user data state to store header/footer images
+  const userData = useSelector((state: RootState) => state.account.userData);
+  console.log('userData----', userData);
   // Initial data fetching
   useEffect(() => {
     dispatch(fetchTemplateById(templateId));
+    dispatch(fetchUserData());
     if (currentTemplate?.event) {
       dispatch(fetchTemplatesByCategory(currentTemplate.event));
     }
@@ -84,6 +94,15 @@ export default function TemplateEditor() {
     resetForm();
     dispatch(fetchTemplateById(templateId));
   }, [templateId]);
+
+  // Initialize header/footer images from user data with the correct property names
+  useEffect(() => {
+    if (userData) {
+      // Use the correct property names from userData
+      setHeaderImage(userData.header || null);
+      setFooterImage(userData.footer || null);
+    }
+  }, [userData]);
 
   // Media handlers
   const handleSelectMedia = () => {
@@ -129,6 +148,8 @@ export default function TemplateEditor() {
       });
       setTemplateVariables(initialVariables);
       setSelectedImage(null);
+      setAddHeader(false);
+      setAddFooter(false);
     }
   };
 
@@ -229,11 +250,60 @@ export default function TemplateEditor() {
     );
   };
 
-  // In your component
+  // Modify the handleGenerateImage function to include header/footer
   const handleGenerateImage = () => {
     if (!currentTemplate) return;
     
-    dispatch(generateImage(currentTemplate, templateVariables))
+    // Create the payload with the proper structure
+    const payload = {
+      imageUrl: currentTemplate.url,
+      mediaType: currentTemplate.mediaType || "image",
+      textOverlays: currentTemplate.templateVariables
+        .filter(variable => variable.name.toLowerCase() !== 'image')
+        .map(variable => ({
+          text: templateVariables[variable.name] || "",
+          width: parseInt(variable.posWidth) || 300,
+          height: parseInt(variable.posHeight) || 150,
+          x: parseInt(variable.x) || 120,
+          y: parseInt(variable.y) || 250,
+          font: variable.font || "Arial",
+          fontFamily: variable.fontFamily || "https://pingz.ai/api/template/fonts/Arial.ttf",
+          fontSize: variable.fontSize || "30",
+          color: variable.color || "#000000"
+        })),
+      imageOverlays: []
+    };
+
+    // Add image overlays if they exist
+    const imageVariable = currentTemplate.templateVariables.find(
+      variable => variable.name.toLowerCase() === 'image'
+    );
+
+    if (imageVariable && templateVariables['image']) {
+      payload.imageOverlays.push({
+        imageUrl: templateVariables['image'],
+        width: parseInt(imageVariable.posWidth) || 0,
+        height: parseInt(imageVariable.posHeight) || 0,
+        x: parseInt(imageVariable.x) || 10,
+        y: parseInt(imageVariable.y) || 10
+      });
+    }
+
+    // Add header if checked and available
+    if (addHeader && headerImage) {
+      payload.header = headerImage;
+      console.log('Adding header image:', headerImage);
+    }
+    
+    // Add footer if checked and available
+    if (addFooter && footerImage) {
+      payload.footer = footerImage;
+      console.log('Adding footer image:', footerImage);
+    }
+    
+    console.log('Generate image payload:', JSON.stringify(payload, null, 2));
+    
+    dispatch(generateImage(payload))
       .catch(error => {
         console.error('Failed to generate image:', error);
       });
@@ -602,11 +672,63 @@ export default function TemplateEditor() {
           <ThemedText style={styles.formTitle}>Customize Template</ThemedText>
           
           {currentTemplate.templateVariables?.map((variable, index) => (
-              <View key={index} style={styles.formGroup}>
+            <View key={index} style={styles.formGroup}>
               <ThemedText style={styles.formLabel}>{variable.name}</ThemedText>
               {renderImageField(variable.name)}
-              </View>
+            </View>
           ))}
+          
+          {/* Header & Footer Options */}
+          <View style={styles.optionsContainer}>
+            <View style={styles.checkboxContainer}>
+              <Switch
+                value={addHeader}
+                onValueChange={setAddHeader}
+                trackColor={{ false: "#767577", true: "#8B3DFF" }}
+                thumbColor={addHeader ? "#ffffff" : "#f4f3f4"}
+              />
+              <ThemedText style={styles.checkboxLabel}>Add header</ThemedText>
+            </View>
+            
+            <View style={styles.checkboxContainer}>
+              <Switch
+                value={addFooter}
+                onValueChange={setAddFooter}
+                trackColor={{ false: "#767577", true: "#8B3DFF" }}
+                thumbColor={addFooter ? "#ffffff" : "#f4f3f4"}
+              />
+              <ThemedText style={styles.checkboxLabel}>Add footer</ThemedText>
+            </View>
+          </View>
+          
+          {/* Show header/footer image previews */}
+          {(addHeader || addFooter) && (
+            <View style={styles.previewImagesContainer}>
+              <View style={styles.previewImagesRow}>
+                {addHeader && headerImage && (
+                  <View style={styles.previewImageWrapper}>
+                    <ThemedText style={styles.previewImageLabel}>Header Image Preview</ThemedText>
+                    <Image 
+                      source={{ uri: headerImage }} 
+                      style={styles.previewHeaderFooterImage} 
+                      resizeMode="cover"
+                    />
+                  </View>
+                )}
+                
+                {addFooter && footerImage && (
+                  <View style={styles.previewImageWrapper}>
+                    <ThemedText style={styles.previewImageLabel}>Footer Image Preview</ThemedText>
+                    <Image 
+                      source={{ uri: footerImage }} 
+                      style={styles.previewHeaderFooterImage} 
+                      resizeMode="cover"
+                    />
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
           
           <TouchableOpacity 
             style={styles.generateButton} 
@@ -651,30 +773,30 @@ export default function TemplateEditor() {
               <Ionicons name="albums-outline" size={24} color="#8B3DFF" />
             </TouchableOpacity>
           </View>
-      </View>
-      
+        </View>
+        
         {/* Similar Templates Section */}
-      <View style={styles.templatesScrollContainer}>
+        <View style={styles.templatesScrollContainer}>
           <ThemedText style={styles.similarTemplatesTitle}>Similar Templates</ThemedText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {templates.map((template) => (
-            <TouchableOpacity 
-              key={template.id} 
-              style={[
-                styles.scrollTemplate,
-                template.id === templateId && styles.selectedScrollTemplate
-              ]}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {templates.map((template) => (
+              <TouchableOpacity 
+                key={template.id} 
+                style={[
+                  styles.scrollTemplate,
+                  template.id === templateId && styles.selectedScrollTemplate
+                ]}
                 onPress={() => router.replace(`/template-editor/${template.id}`)}
-            >
-              <Image
-                source={{ uri: template.url || 'https://via.placeholder.com/150' }}
-                style={styles.scrollTemplateImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+              >
+                <Image
+                  source={{ uri: template.url || 'https://via.placeholder.com/150' }}
+                  style={styles.scrollTemplateImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       </ScrollView>
       
       {renderMediaLibrary()}
@@ -1046,5 +1168,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
     shadowOpacity: 0,
     elevation: 0,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#555',
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  previewImagesContainer: {
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  previewImagesRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  previewImageWrapper: {
+    marginRight: 16,
+    marginBottom: 16,
+    flex: 1,
+    maxWidth: '45%',
+  },
+  previewImageLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#555',
+  },
+  previewHeaderFooterImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e4e8',
   },
 }); 
