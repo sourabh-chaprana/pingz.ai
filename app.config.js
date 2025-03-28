@@ -28,7 +28,7 @@ export default {
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        // foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#FFFFFF"
       }
     },
