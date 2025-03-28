@@ -14,6 +14,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/src/store";
 import { useRouter } from "expo-router";
 import { clearSearch } from "@/src/features/search/searchSlice";
+import { useState, useEffect } from "react";
 
 const { width } = Dimensions.get("window");
 const COLUMN_COUNT = 2;
@@ -30,13 +31,31 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query }) => {
   );
   const router = useRouter();
   const dispatch = useDispatch();
+  const [hasSearched, setHasSearched] = useState(false);
+  const [previousQuery, setPreviousQuery] = useState("");
 
-  // Clear results when query is empty
-  React.useEffect(() => {
-    if (!query.trim()) {
-      dispatch(clearSearch());
+  // Track when search query changes to reset search state
+  useEffect(() => {
+    if (query !== previousQuery) {
+      if (!query.trim()) {
+        dispatch(clearSearch());
+        setHasSearched(false);
+      }
+      setPreviousQuery(query);
     }
-  }, [query, dispatch]);
+  }, [query, dispatch, previousQuery]);
+
+  // Track when a search has completed (loading -> not loading)
+  useEffect(() => {
+    const isInitialState =
+      !loading && results.length === 0 && !error && !hasSearched;
+    const hasCompletedSearch = !loading && hasSearched;
+
+    if (!isInitialState && !hasCompletedSearch && loading) {
+      // We were loading (searching) and now we're done
+      setHasSearched(true);
+    }
+  }, [loading, results, error, hasSearched]);
 
   const handleTemplatePress = (templateId: string) => {
     router.push(`/template-editor/${templateId}`);
@@ -45,27 +64,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query }) => {
   // Show nothing when query is empty
   if (!query.trim()) {
     return null;
-  }
-
-  // No results found view
-  if (!loading && results.length === 0 && query.trim()) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.noResultsContainer}>
-          <View style={styles.noResultsIconContainer}>
-            <Ionicons name="search-outline" size={80} color="#CCCCCC" />
-          </View>
-          <ThemedText style={styles.noResultsTitle}>
-            We couldn't find anything for "{query}"
-          </ThemedText>
-          <ThemedText style={styles.noResultsText}>
-            Check that a typo hasn't snuck in, or try searching for something a
-            little more generic. If all else fails and you're after a little
-            inspiration, feel free to explore Canva's Templates.
-          </ThemedText>
-        </View>
-      </View>
-    );
   }
 
   // Loading view
@@ -77,50 +75,66 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query }) => {
     );
   }
 
-  // Results view - simplified without filters and action buttons
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.resultsContainer}
-        contentContainerStyle={styles.resultsContent}
-      >
-        <View style={styles.resultsGrid}>
-          {results.map((template) => (
-            <TouchableOpacity
-              key={template.id}
-              style={styles.resultCard}
-              onPress={() => handleTemplatePress(template.id)}
-            >
-              <Image
-                source={{ uri: template.url }}
-                style={styles.resultImage}
-                resizeMode="cover"
-              />
-              <View style={styles.resultInfo}>
-                <ThemedText style={styles.resultTitle} numberOfLines={1}>
-                  {template.templateName}
-                </ThemedText>
-
-                <ThemedText style={styles.resultAuthor} numberOfLines={1}>
-                  {template.mediaType ? `${template.mediaType} by ` : ""}
-                  <ThemedText style={styles.authorHighlight}>
-                    {template.event || "Design"}
-                  </ThemedText>
-                </ThemedText>
-              </View>
-
-              {template.premium && (
-                <View style={styles.proTag}>
-                  <Ionicons name="crown" size={12} color="#333" />
-                  <ThemedText style={styles.proText}>Pro</ThemedText>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+  // No results found view - only show when a search has been completed
+  if (hasSearched && results.length === 0 && query.trim()) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.noResultsContainer}>
+          <View style={styles.noResultsIconContainer}>
+            <Ionicons name="search-outline" size={80} color="#CCCCCC" />
+          </View>
+          <ThemedText style={styles.noResultsTitle}>
+            We couldn't find anything for "{query}"
+          </ThemedText>
+          <ThemedText style={styles.noResultsText}>
+            Check that a typo hasn't snuck in, or try searching for something a
+            little more generic.
+          </ThemedText>
         </View>
-      </ScrollView>
-    </View>
-  );
+      </View>
+    );
+  }
+
+  // Results view when we have results
+  if (results.length > 0) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.resultsContainer}
+          contentContainerStyle={styles.resultsContent}
+        >
+          <View style={styles.resultsGrid}>
+            {results.map((template) => (
+              <TouchableOpacity
+                key={template.id}
+                style={styles.resultCard}
+                onPress={() => handleTemplatePress(template.id)}
+              >
+                <Image
+                  source={{ uri: template.url }}
+                  style={styles.resultImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.resultInfo}>
+                  <ThemedText style={styles.resultTitle}>
+                    {template.templateName}
+                  </ThemedText>
+                  <ThemedText style={styles.resultAuthor}>
+                    <ThemedText style={styles.authorHighlight}>
+                      {template.event || "holidays"}
+                    </ThemedText>
+                  </ThemedText>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Default view when typing but not yet searched
+  return null;
 };
 
 const styles = StyleSheet.create({
@@ -167,7 +181,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     color: "#333",
     marginBottom: 4,
   },
