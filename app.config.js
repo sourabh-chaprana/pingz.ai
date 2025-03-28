@@ -9,40 +9,48 @@ export default {
       [
         "expo-build-properties",
         {
-          "android": {
-            "usesCleartextTraffic": true
-          }
-        }
+          android: {
+            usesCleartextTraffic: true,
+          },
+        },
       ],
       [
         "expo-media-library",
         {
           photosPermission: "Allow $(PRODUCT_NAME) to access your photos.",
           savePhotosPermission: "Allow $(PRODUCT_NAME) to save photos.",
-          isAccessMediaLocationEnabled: true
-        }
-      ]
+          isAccessMediaLocationEnabled: true,
+        },
+      ],
     ],
     android: {
-      permissions: ["INTERNET", "CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "MEDIA_LIBRARY"],
+      permissions: [
+        "INTERNET",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "MEDIA_LIBRARY",
+      ],
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#FFFFFF"
-      }
+        // foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#FFFFFF",
+      },
     },
     ios: {
       supportsTablet: true,
       infoPlist: {
-        NSPhotoLibraryUsageDescription: "Allow $(PRODUCT_NAME) to access your photos.",
-        NSPhotoLibraryAddUsageDescription: "Allow $(PRODUCT_NAME) to save photos."
-      }
+        NSPhotoLibraryUsageDescription:
+          "Allow $(PRODUCT_NAME) to access your photos.",
+        NSPhotoLibraryAddUsageDescription:
+          "Allow $(PRODUCT_NAME) to save photos.",
+      },
     },
     extra: {
       // Disable TLS/SSL certificate validation in development
       // WARNING: NEVER use this in production!
-      allowInsecureConnections: true
-    }
-  }
-}; 
+      allowInsecureConnections: true,
+    },
+  },
+};

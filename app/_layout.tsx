@@ -175,6 +175,11 @@ function CustomDrawerContent(props: any) {
         onPress={() => props.navigation.navigate("ask")}
       />
       <MenuItem
+        icon="list-outline"
+        label="Transactions"
+        onPress={() => props.navigation.navigate("transaction")}
+      />
+      <MenuItem
         icon="help-circle-outline"
         label="Account"
         onPress={() => props.navigation.navigate("account")}
@@ -424,6 +429,10 @@ function DrawerNavigator() {
           <Drawer.Screen name="apps" options={{ title: "Apps" }} />
           <Drawer.Screen name="dreamlab" options={{ title: "Dream Lab" }} />
           <Drawer.Screen name="ask" options={{ title: "Ask Canva" }} />
+          <Drawer.Screen
+            name="transaction"
+            options={{ title: "Transactions" }}
+          />
           <Drawer.Screen name="trash" options={{ title: "Trash" }} />
           <Drawer.Screen
             name="template-editor/[id]"
