@@ -17,7 +17,7 @@ interface RegisterCredentials {
 
 interface VerifyOtpCredentials {
   email?: string;
-  code: string;
+  otp: string;
   txnId?: string;
 }
 

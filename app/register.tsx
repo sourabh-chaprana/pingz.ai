@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
-import { register, verifyOtp, resendOtp } from '../src/features/auth/authThunks';
+import { register, verifyOtp, resendOtp,login } from '../src/features/auth/authThunks';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
@@ -76,7 +76,7 @@ export default function RegisterScreen() {
           });
           
           // Clear name but keep mobile for OTP verification
-          setName('');
+          // setName('');
           setShowOtpModal(true);
         }
       } else {
@@ -218,8 +218,12 @@ export default function RegisterScreen() {
         });
         return;
       }
-      
-      const result = await dispatch(resendOtp({ mobileNumber })).unwrap();
+      const payload = {
+        name,
+        mobileNumber,
+        userType
+      };
+      const result = await dispatch(register( payload )).unwrap();
       
       if (result && result.txnId) {
         setTxnId(result.txnId);

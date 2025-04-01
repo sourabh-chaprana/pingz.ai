@@ -153,11 +153,11 @@ export default function LoginScreen() {
       
       // Verify OTP for mobile login
       const payload = { 
-        code: otpCode,
+        otp: otpCode,
         txnId: txnId
       };
       
-      const result = await dispatch(verifyOtp(payload)).unwrap();
+      const result = await dispatch(login(payload)).unwrap();
       
       if (result && (result.success || result.idToken)) {
         // If the API returned tokens, store them
