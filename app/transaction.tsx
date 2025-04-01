@@ -9,78 +9,13 @@ import {
   Platform,
   KeyboardAvoidingView,
   Modal,
-  Text,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
-
-// Mock data for demonstration - will be replaced by API data
-const mockTransactions = [
-  {
-    id: "1",
-    templateName: "Marketing Template",
-    createdOn: "2023-05-15",
-    count: 4,
-  },
-  {
-    id: "2",
-    templateName: "Invoice Design",
-    createdOn: "2023-05-14",
-    count: 2,
-  },
-  {
-    id: "3",
-    templateName: "Presentation Slides",
-    createdOn: "2023-05-10",
-    count: 7,
-  },
-  { id: "4", templateName: "Business Card", createdOn: "2023-05-07", count: 1 },
-  {
-    id: "5",
-    templateName: "Social Media Post",
-    createdOn: "2023-05-03",
-    count: 3,
-  },
-  { id: "6", templateName: "Newsletter", createdOn: "2023-04-28", count: 5 },
-  {
-    id: "7",
-    templateName: "Brochure Design",
-    createdOn: "2023-04-25",
-    count: 2,
-  },
-  { id: "8", templateName: "Logo Template", createdOn: "2023-04-20", count: 1 },
-  {
-    id: "9",
-    templateName: "Flyer Design",
-    createdOn: "2023-04-18",
-    count: 3,
-  },
-  {
-    id: "10",
-    templateName: "Banner Ad",
-    createdOn: "2023-04-15",
-    count: 2,
-  },
-  {
-    id: "11",
-    templateName: "Event Invitation",
-    createdOn: "2023-04-10",
-    count: 5,
-  },
-  {
-    id: "12",
-    templateName: "Resume Template",
-    createdOn: "2023-04-05",
-    count: 1,
-  },
-  {
-    id: "13",
-    templateName: "Product Catalog",
-    createdOn: "2023-04-01",
-    count: 6,
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTransactions } from "@/src/features/transaction/transactionThunks";
+import { RootState } from "@/src/store";
 
 // Calendar component for date picker
 const SimpleCalendar = ({ visible, onClose, onSelectDate, initialDate }) => {
@@ -231,70 +166,48 @@ const SimpleCalendar = ({ visible, onClose, onSelectDate, initialDate }) => {
 
 const TransactionScreen = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
-  const [transactions, setTransactions] = useState(mockTransactions);
-  const [loading, setLoading] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0); // API uses 0-based indexing
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [paginatedData, setPaginatedData] = useState([]);
+  // Get transactions data from Redux store
+  const { transactions, loading, error, totalItems, totalPages, itemsPerPage } =
+    useSelector((state: RootState) => state.transaction);
 
   // Handle navigation back
   const handleBack = () => {
     router.back();
   };
 
-  // Apply filters and pagination
-  const applyFilters = () => {
-    setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      // Filter based on search query and date range
-      let filtered = mockTransactions;
+  // Format date for API (YYYY-MM-DDT18:30:00.000Z)
+  const formatDateForApi = (date) => {
+    if (!date) return null;
+    return date.toISOString();
+  };
 
-      if (searchQuery) {
-        filtered = filtered.filter((item) =>
-          item.templateName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
+  // Load transactions
+  const loadTransactions = () => {
+    const fromDate = formatDateForApi(startDate);
+    const toDate = formatDateForApi(endDate);
 
-      if (startDate) {
-        filtered = filtered.filter(
-          (item) => new Date(item.createdOn) >= startDate
-        );
-      }
-
-      if (endDate) {
-        // Add one day to include the end date fully
-        const endDatePlusOne = new Date(endDate);
-        endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-        filtered = filtered.filter(
-          (item) => new Date(item.createdOn) < endDatePlusOne
-        );
-      }
-
-      // Update total items count
-      setTotalItems(filtered.length);
-
-      // Apply pagination
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedItems = filtered.slice(startIndex, endIndex);
-
-      setPaginatedData(paginatedItems);
-      setLoading(false);
-    }, 500);
+    dispatch(
+      fetchTransactions({
+        page: currentPage,
+        size: itemsPerPage,
+        searchQuery: searchQuery || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      })
+    );
   };
 
   // Handle page change
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    setCurrentPage(page - 1); // Convert to 0-based for API
   };
 
   // Format date for display
@@ -312,18 +225,44 @@ const TransactionScreen = () => {
     return formatDate(date);
   };
 
-  // Reset all filters
+  // Apply filters when reset button is clicked
+  const handleApplyFilters = () => {
+    setCurrentPage(0); // Reset to first page
+
+    // Log the search parameters for debugging
+    console.log("Applying filters:", {
+      searchQuery,
+      fromDate: formatDateForApi(startDate),
+      toDate: formatDateForApi(endDate),
+    });
+
+    loadTransactions();
+  };
+
+  // Fix the handleReset function to immediately apply the reset
   const handleReset = () => {
+    // First update the state
     setSearchQuery("");
     setStartDate(null);
     setEndDate(null);
-    setCurrentPage(1);
+    setCurrentPage(0);
+
+    // Then immediately dispatch the action with empty values
+    dispatch(
+      fetchTransactions({
+        page: 0,
+        size: itemsPerPage,
+        searchQuery: undefined,
+        fromDate: undefined,
+        toDate: undefined,
+      })
+    );
   };
 
-  // Apply filters when filters change or page changes
+  // Load transactions on initial render and when filters change
   useEffect(() => {
-    applyFilters();
-  }, [searchQuery, startDate, endDate, currentPage, itemsPerPage]);
+    loadTransactions();
+  }, [currentPage]); // Only reload when page changes
 
   // Render table header
   const renderHeader = () => (
@@ -341,26 +280,31 @@ const TransactionScreen = () => {
   );
 
   // Render table row
-  const renderItem = ({ item }) => (
-    <View style={styles.tableRow}>
-      <ThemedText
-        style={[styles.cellText, styles.templateNameCell]}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        {item.templateName}
-      </ThemedText>
-      <ThemedText style={[styles.cellText, styles.createdOnCell]}>
-        {formatDate(item.createdOn)}
-      </ThemedText>
-      <ThemedText style={[styles.cellText, styles.countCell]}>
-        {item.count}
-      </ThemedText>
-    </View>
-  );
+  const renderItem = ({ item }) => {
+    // Get the count value, falling back to records if count is not available
+    const countValue = item.count || item.records || 0;
 
-  // Calculate total pages
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+    return (
+      <View style={styles.tableRow}>
+        <ThemedText
+          style={[styles.cellText, styles.templateNameCell]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.templateName}
+        </ThemedText>
+        <ThemedText style={[styles.cellText, styles.createdOnCell]}>
+          {formatDate(item.createdOn)}
+        </ThemedText>
+        <ThemedText style={[styles.cellText, styles.countCell]}>
+          {countValue}
+        </ThemedText>
+      </View>
+    );
+  };
+
+  // Calculate for display (1-based)
+  const displayPage = currentPage + 1;
 
   return (
     <KeyboardAvoidingView
@@ -383,7 +327,10 @@ const TransactionScreen = () => {
             onChangeText={setSearchQuery}
             placeholderTextColor="#999"
           />
-          <TouchableOpacity style={styles.searchIcon}>
+          <TouchableOpacity
+            style={styles.searchIcon}
+            onPress={handleApplyFilters}
+          >
             <Ionicons name="search" size={20} color="#666" />
           </TouchableOpacity>
         </View>
@@ -407,6 +354,13 @@ const TransactionScreen = () => {
               <ThemedText style={styles.dateButtonText}>
                 {formatButtonDate(endDate)}
               </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={handleApplyFilters}
+            >
+              <ThemedText style={styles.applyButtonText}>Apply</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
@@ -433,11 +387,21 @@ const TransactionScreen = () => {
 
       {loading ? (
         <ActivityIndicator style={styles.loader} size="large" color="#8B3DFF" />
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadTransactions}
+          >
+            <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+          </TouchableOpacity>
+        </View>
       ) : (
         <View style={styles.tableContainer}>
           {renderHeader()}
           <FlatList
-            data={paginatedData}
+            data={transactions}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
@@ -455,8 +419,8 @@ const TransactionScreen = () => {
             <View style={styles.paginationContainer}>
               <View style={styles.paginationInfo}>
                 <ThemedText style={styles.paginationText}>
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                  {Math.min(currentPage * itemsPerPage, totalItems)} of{" "}
+                  Showing {currentPage * itemsPerPage + 1} to{" "}
+                  {Math.min((currentPage + 1) * itemsPerPage, totalItems)} of{" "}
                   {totalItems} entries
                 </ThemedText>
               </View>
@@ -465,12 +429,12 @@ const TransactionScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.paginationButton,
-                    currentPage === 1 && styles.paginationButtonDisabled,
+                    displayPage === 1 && styles.paginationButtonDisabled,
                   ]}
                   onPress={() =>
-                    currentPage > 1 && handlePageChange(currentPage - 1)
+                    displayPage > 1 && handlePageChange(displayPage - 1)
                   }
-                  disabled={currentPage === 1}
+                  disabled={displayPage === 1}
                 >
                   <ThemedText style={styles.paginationButtonText}>
                     Previous
@@ -482,14 +446,14 @@ const TransactionScreen = () => {
                     key={page + 1}
                     style={[
                       styles.paginationButton,
-                      currentPage === page + 1 && styles.paginationButtonActive,
+                      displayPage === page + 1 && styles.paginationButtonActive,
                     ]}
                     onPress={() => handlePageChange(page + 1)}
                   >
                     <ThemedText
                       style={[
                         styles.paginationButtonText,
-                        currentPage === page + 1 &&
+                        displayPage === page + 1 &&
                           styles.paginationButtonTextActive,
                       ]}
                     >
@@ -501,14 +465,14 @@ const TransactionScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.paginationButton,
-                    currentPage === totalPages &&
+                    displayPage === totalPages &&
                       styles.paginationButtonDisabled,
                   ]}
                   onPress={() =>
-                    currentPage < totalPages &&
-                    handlePageChange(currentPage + 1)
+                    displayPage < totalPages &&
+                    handlePageChange(displayPage + 1)
                   }
-                  disabled={currentPage === totalPages}
+                  disabled={displayPage === totalPages}
                 >
                   <ThemedText style={styles.paginationButtonText}>
                     Next
@@ -583,7 +547,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dateButton: {
-    flex: 1,
+    flex: 2,
     height: 44,
     backgroundColor: "#f5f5f5",
     borderRadius: 8,
@@ -594,6 +558,20 @@ const styles = StyleSheet.create({
   dateButtonText: {
     fontSize: 14,
     color: "#666",
+  },
+  applyButton: {
+    flex: 1,
+    height: 40,
+    backgroundColor: "#8B3DFF",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  applyButtonText: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "500",
   },
   resetButton: {
     width: 40,
@@ -668,6 +646,29 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#ff4444",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: "#8B3DFF",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
   loader: {
     flex: 1,
     justifyContent: "center",
@@ -689,16 +690,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    flexWrap: "wrap",
   },
   paginationButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginHorizontal: 4,
+    marginBottom: 8,
     borderRadius: 4,
     backgroundColor: "#f5f5f5",
   },
   paginationButtonActive: {
-    backgroundColor: "#333",
+    backgroundColor: "#8B3DFF",
   },
   paginationButtonDisabled: {
     backgroundColor: "#f5f5f5",
