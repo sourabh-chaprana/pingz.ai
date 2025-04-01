@@ -521,7 +521,7 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recent designs</ThemedText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/myTemplates")}>
               <ThemedText style={styles.seeAll}>See all</ThemedText>
             </TouchableOpacity>
           </View>

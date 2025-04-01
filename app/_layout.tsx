@@ -41,6 +41,7 @@ import { useRouter } from "expo-router";
 import { searchTemplates } from "@/src/features/search/searchThunks";
 import { clearSearch } from "@/src/features/search/searchSlice";
 import SearchResults from "@/app/SearchResult";
+import { logoutUser } from "@/src/features/auth/authSlice";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -111,7 +112,10 @@ function RecentDesignsSection({ navigation }: { navigation: any }) {
       </TouchableOpacity>
 
       {expanded && (
-        <View style={styles.recentDesignsList}>
+        <ScrollView 
+          style={styles.recentDesignsList}
+          showsVerticalScrollIndicator={true}
+        >
           {loading ? (
             <ActivityIndicator
               size="small"
@@ -144,7 +148,7 @@ function RecentDesignsSection({ navigation }: { navigation: any }) {
               No recent designs found
             </ThemedText>
           )}
-        </View>
+        </ScrollView>
       )}
     </View>
   );
@@ -154,20 +158,51 @@ function CustomDrawerContent(props: any) {
   const isAuthenticated = useSelector((state: RootState) =>
     Boolean(state.auth.token)
   );
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      // Clear the auth token from storage
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('refreshToken');
+
+      // Clear any other user-related data from storage if needed
+      
+      // Use the renamed action
+      dispatch(logoutUser());
+
+      // Navigate to login screen
+      router.replace('/login');
+
+      // Show success message
+      Toast.show({
+        type: 'success',
+        text1: 'Logged out successfully',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to logout. Please try again.',
+      });
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Fixed content */}
       <ProfileHeader />
       <MenuItem
         icon="home-outline"
         label="Home"
         onPress={() => props.navigation.navigate("(tabs)")}
       />
-
       <MenuItem
         icon="bulb-outline"
-        label="Dream Lab"
-        onPress={() => props.navigation.navigate("dreamlab")}
+        label="My Templates"
+        onPress={() => props.navigation.navigate("myTemplates")}
       />
       <MenuItem
         icon="help-circle-outline"
@@ -185,13 +220,23 @@ function CustomDrawerContent(props: any) {
         onPress={() => props.navigation.navigate("account")}
       />
 
-      {/* Add divider before Recent designs section */}
       <View style={styles.divider} />
 
-      {/* Add the Recent designs section */}
+      {/* Recent designs section */}
       {isAuthenticated && (
         <RecentDesignsSection navigation={props.navigation} />
       )}
+
+      {/* Fixed logout section at bottom */}
+      <View style={{ marginTop: 'auto' }}>
+        <View style={styles.divider} />
+        <MenuItem
+          icon="log-out-outline"
+          label="Logout"
+          onPress={handleLogout}
+          style={styles.logoutButton}
+        />
+      </View>
     </View>
   );
 }
@@ -427,7 +472,7 @@ function DrawerNavigator() {
         <>
           <Drawer.Screen name="brand" options={{ title: "Brand" }} />
           <Drawer.Screen name="apps" options={{ title: "Apps" }} />
-          <Drawer.Screen name="dreamlab" options={{ title: "Dream Lab" }} />
+          <Drawer.Screen name="myTemplates" options={{ title: "My Templates" }} />
           <Drawer.Screen name="ask" options={{ title: "Ask Canva" }} />
           <Drawer.Screen
             name="transaction"
@@ -541,6 +586,7 @@ const styles = StyleSheet.create({
   recentDesignsContainer: {
     marginTop: 5,
     paddingHorizontal: 10,
+    maxHeight: 300,
   },
   recentDesignsHeader: {
     flexDirection: "row",
@@ -555,7 +601,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   recentDesignsList: {
-    marginTop: 5,
+    maxHeight: 250,
   },
   recentDesignItem: {
     flexDirection: "row",
@@ -581,6 +627,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     fontStyle: "italic",
+  },
+  logoutButton: {
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingVertical: 12,
   },
 });
 
