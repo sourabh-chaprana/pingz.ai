@@ -11,6 +11,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import { Linking, NativeModules } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { maybeCompleteAuthSession } from 'expo-web-browser';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +46,9 @@ export const Storage = {
   }
 };
 
+// Initialize WebBrowser for auth redirect
+maybeCompleteAuthSession();
+
 export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -65,6 +71,20 @@ export default function LoginScreen() {
   
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
+
+  // Update Google Auth configuration with proper client IDs
+  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
+    expoClientId: 'YOUR_CORRECT_EXPO_CLIENT_ID',
+    iosClientId: 'YOUR_CORRECT_IOS_CLIENT_ID',
+    androidClientId: 'YOUR_CORRECT_ANDROID_CLIENT_ID',
+    webClientId: 'YOUR_CORRECT_WEB_CLIENT_ID',
+    // Add these properties for more control
+    scopes: ['profile', 'email'],
+    redirectUri: Platform.select({
+      web: 'http://localhost:8081', // Change this to match your development environment
+      default: undefined
+    })
+  });
 
   const startCountdownTimer = () => {
     setCountdown(60);
@@ -293,6 +313,71 @@ export default function LoginScreen() {
     setPassword('');
   };
 
+  // Handle Google sign-in
+  const handleGoogleSignIn = async () => {
+    try {
+      console.log('Starting Google authentication...');
+      
+      // Check if the request is ready before proceeding
+      if (!googleRequest) {
+        Toast.show({
+          type: 'error',
+          text1: 'Google Sign In',
+          text2: 'Google authentication is not ready yet. Please try again.',
+        });
+        return;
+      }
+      
+      const result = await promptGoogleAsync();
+      console.log('Google auth result type:', result.type);
+      
+      if (result.type === 'success') {
+        // Get user info using the access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+          headers: { Authorization: `Bearer ${result.authentication.accessToken}` },
+        });
+        
+        const userInfo = await userInfoResponse.json();
+        console.log('Google user info:', userInfo);
+        
+        // Send the token to your backend for verification and user creation/login
+        // This depends on your backend implementation
+        const backendResponse = await dispatch(login({ 
+          provider: 'google',
+          token: result.authentication.accessToken,
+          userData: userInfo
+        })).unwrap();
+        
+        if (backendResponse) {
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Google login successful',
+          });
+          
+          // Navigate to main app
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 300);
+        }
+      } else {
+        console.log('Authentication failed:', result);
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: `Google authentication error: ${result.type}`,
+        });
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: typeof error === 'string' ? error : 'Failed to authenticate with Google',
+      });
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.card}>
@@ -382,7 +467,11 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.socialContainer}>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity 
+            style={styles.socialButton}
+            onPress={handleGoogleSignIn}
+            disabled={!googleRequest}
+          >
             <FontAwesome name="google" size={22} color="#DB4437" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton}>
