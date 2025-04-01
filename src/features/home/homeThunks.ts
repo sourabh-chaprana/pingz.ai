@@ -1,12 +1,27 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-import { RecentTemplate } from "./homeSlice";
 import { RootState } from "@/src/store";
+import { api } from "@/src/services/api";
+import { Template } from "./homeSlice";
 
-const API_BASE_URL = "https://dev.pingz.ai/api";
+// Fetch paginated templates
+export const fetchTemplates = createAsyncThunk<
+  any,
+  { page: number; size: number },
+  { rejectValue: string; state: RootState }
+>("home/fetchTemplates", async ({ page, size }, { rejectWithValue }) => {
+  try {
+    const response = await api.get(`/template/?page=${page}&size=${size}`);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch templates"
+    );
+  }
+});
 
+// Fetch recent templates
 export const fetchRecentTemplates = createAsyncThunk<
-  RecentTemplate[],
+  Template[],
   void,
   { rejectValue: string; state: RootState }
 >("home/fetchRecentTemplates", async (_, { getState, rejectWithValue }) => {
@@ -18,28 +33,11 @@ export const fetchRecentTemplates = createAsyncThunk<
       return rejectWithValue("User ID is required");
     }
 
-    if (!auth.token) {
-      return rejectWithValue("Authentication token is required");
-    }
-
-    const config = {
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-      },
-    };
-
-    const response = await axios.get(
-      `${API_BASE_URL}/template/recent/${userId}`,
-      config
-    );
-
+    const response = await api.get(`/template/recent/${userId}`);
     return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch recent templates"
-      );
-    }
-    return rejectWithValue("Failed to fetch recent templates");
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch recent templates"
+    );
   }
 });

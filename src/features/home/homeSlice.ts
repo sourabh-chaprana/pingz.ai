@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { fetchRecentTemplates } from "./homeThunks";
+import { fetchTemplates, fetchRecentTemplates } from "./homeThunks";
 
-export interface RecentTemplate {
+export interface Template {
   id: string;
   templateName: string;
   description: string;
@@ -29,16 +29,38 @@ interface TemplateVariable {
   color: string | null;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+}
+
 interface HomeState {
-  recentTemplates: RecentTemplate[];
+  templates: Template[];
+  recentTemplates: Template[];
   loading: boolean;
+  recentLoading: boolean;
   error: string | null;
+  recentError: string | null;
+  pagination: PaginationInfo;
 }
 
 const initialState: HomeState = {
+  templates: [],
   recentTemplates: [],
   loading: false,
+  recentLoading: false,
   error: null,
+  recentError: null,
+  pagination: {
+    currentPage: 0,
+    totalPages: 0,
+    totalElements: 0,
+    hasMore: true,
+    isLoadingMore: false,
+  },
 };
 
 export const homeSlice = createSlice({
@@ -47,28 +69,82 @@ export const homeSlice = createSlice({
   reducers: {
     clearHomeErrors: (state) => {
       state.error = null;
+      state.recentError = null;
+    },
+    resetTemplates: (state) => {
+      state.templates = [];
+      state.pagination = {
+        ...initialState.pagination,
+        currentPage: 0,
+        hasMore: true,
+      };
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchRecentTemplates.pending, (state) => {
-        state.loading = true;
+      .addCase(fetchTemplates.pending, (state, action) => {
+        if (action.meta.arg.page === 0) {
+          state.loading = true;
+        } else {
+          state.pagination.isLoadingMore = true;
+        }
         state.error = null;
       })
       .addCase(
-        fetchRecentTemplates.fulfilled,
-        (state, action: PayloadAction<RecentTemplate[]>) => {
+        fetchTemplates.fulfilled,
+        (state, action: PayloadAction<{
+          content: Template[];
+          last: boolean;
+          totalPages: number;
+          totalElements: number;
+          number: number;
+        }>) => {
           state.loading = false;
+          state.pagination.isLoadingMore = false;
+
+          if (action.payload.number === 0) {
+            state.templates = action.payload.content;
+          } else {
+            const newTemplates = action.payload.content.filter(
+              (newTemplate) => 
+                !state.templates.some(
+                  (existingTemplate) => existingTemplate.id === newTemplate.id
+                )
+            );
+            state.templates = [...state.templates, ...newTemplates];
+          }
+
+          state.pagination = {
+            ...state.pagination,
+            currentPage: action.payload.number + 1,
+            totalPages: action.payload.totalPages,
+            totalElements: action.payload.totalElements,
+            hasMore: !action.payload.last,
+          };
+        }
+      )
+      .addCase(fetchTemplates.rejected, (state, action) => {
+        state.loading = false;
+        state.pagination.isLoadingMore = false;
+        state.error = action.payload as string || "Failed to fetch templates";
+      })
+      .addCase(fetchRecentTemplates.pending, (state) => {
+        state.recentLoading = true;
+        state.recentError = null;
+      })
+      .addCase(
+        fetchRecentTemplates.fulfilled,
+        (state, action: PayloadAction<Template[]>) => {
+          state.recentLoading = false;
           state.recentTemplates = action.payload;
         }
       )
       .addCase(fetchRecentTemplates.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) || "Failed to fetch recent templates";
+        state.recentLoading = false;
+        state.recentError = action.payload as string || "Failed to fetch recent templates";
       });
   },
 });
 
-export const { clearHomeErrors } = homeSlice.actions;
+export const { clearHomeErrors, resetTemplates } = homeSlice.actions;
 export default homeSlice.reducer;
