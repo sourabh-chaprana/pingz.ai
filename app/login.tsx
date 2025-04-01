@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Switch, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
@@ -8,6 +8,9 @@ import { login, resendOtp, verifyOtp } from '../src/features/auth/authThunks';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Device from 'expo-device';
+import { Linking, NativeModules } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 
@@ -57,9 +60,31 @@ export default function LoginScreen() {
   const [otpVerificationLoading, setOtpVerificationLoading] = useState(false);
   const [txnId, setTxnId] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
+
+  const startCountdownTimer = () => {
+    setCountdown(60);
+    
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
+    
+    countdownTimerRef.current = setInterval(() => {
+      setCountdown(prevCount => {
+        if (prevCount <= 1) {
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+          }
+          return 0;
+        }
+        return prevCount - 1;
+      });
+    }, 1000);
+  };
 
   const handleLogin = async () => {
     try {
@@ -84,6 +109,9 @@ export default function LoginScreen() {
             text1: 'OTP Sent',
             text2: 'Please enter the OTP sent to your mobile',
           });
+          
+          // Start the countdown timer
+          startCountdownTimer();
           
           // Show OTP modal
           setShowOtpModal(true);
@@ -222,6 +250,9 @@ export default function LoginScreen() {
           text2: 'OTP sent again to your mobile',
         });
         
+        // Start the countdown timer
+        startCountdownTimer();
+        
         // Clear OTP fields
         setOtp(['', '', '', '', '', '']);
         if (otpInputs.current[0]) {
@@ -242,6 +273,12 @@ export default function LoginScreen() {
   const handleCloseModal = () => {
     setShowOtpModal(false);
     setOtp(['', '', '', '', '', '']);
+    
+    // Clear the countdown timer
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      setCountdown(0);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -396,12 +433,20 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.resendButton, resendLoading && styles.disabledButton]}
+              style={[
+                styles.resendButton, 
+                (resendLoading || countdown > 0) && styles.disabledButton
+              ]}
               onPress={handleResendOtp}
-              disabled={resendLoading}
+              disabled={resendLoading || countdown > 0}
             >
               <ThemedText style={styles.resendButtonText}>
-                {resendLoading ? 'Sending...' : 'Resend OTP'}
+                {resendLoading 
+                  ? 'Sending...' 
+                  : countdown > 0 
+                    ? `Resend OTP in ${countdown}s` 
+                    : 'Resend OTP'
+                }
               </ThemedText>
             </TouchableOpacity>
 

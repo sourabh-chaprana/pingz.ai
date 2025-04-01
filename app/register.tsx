@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Modal, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
 import { register, verifyOtp, resendOtp,login } from '../src/features/auth/authThunks';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import * as Clipboard from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 
@@ -27,9 +28,31 @@ export default function RegisterScreen() {
   const [useMobile, setUseMobile] = useState(false);
   const [txnId, setTxnId] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
+
+  const startCountdownTimer = () => {
+    setCountdown(60);
+    
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
+    
+    countdownTimerRef.current = setInterval(() => {
+      setCountdown(prevCount => {
+        if (prevCount <= 1) {
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+          }
+          return 0;
+        }
+        return prevCount - 1;
+      });
+    }, 1000);
+  };
 
   const handleRegister = async () => {
     try {
@@ -74,6 +97,9 @@ export default function RegisterScreen() {
             text1: 'Success',
             text2: 'OTP sent to your mobile',
           });
+          
+          // Start the countdown timer
+          startCountdownTimer();
           
           // Clear name but keep mobile for OTP verification
           // setName('');
@@ -170,6 +196,7 @@ export default function RegisterScreen() {
       
       // Check if verification was successful
       if (result && result.success) {
+        // Explicitly show success toast
         Toast.show({
           type: 'success',
           text1: 'Success',
@@ -184,7 +211,9 @@ export default function RegisterScreen() {
         setTxnId('');
         
         // Navigate to login only on success
-        router.replace('/login');
+        setTimeout(() => {
+          router.replace('/login');
+        }, 300);
       } else {
         // Just hide modal but stay on register page
         Toast.show({
@@ -195,6 +224,7 @@ export default function RegisterScreen() {
         setShowOtpModal(false);
       }
     } catch (error) {
+      // Ensure error toast is shown
       Toast.show({
         type: 'error',
         text1: 'Verification Failed',
@@ -223,7 +253,7 @@ export default function RegisterScreen() {
         mobileNumber,
         userType
       };
-      const result = await dispatch(register( payload )).unwrap();
+      const result = await dispatch(register(payload)).unwrap();
       
       if (result && result.txnId) {
         setTxnId(result.txnId);
@@ -232,6 +262,9 @@ export default function RegisterScreen() {
           text1: 'Success',
           text2: 'OTP sent again to your mobile',
         });
+        
+        // Start the countdown timer
+        startCountdownTimer();
         
         // Clear OTP fields
         setOtp(['', '', '', '', '', '']);
@@ -253,6 +286,12 @@ export default function RegisterScreen() {
   const handleCloseModal = () => {
     setShowOtpModal(false);
     setOtp(['', '', '', '', '', '']);
+    
+    // Clear the countdown timer
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      setCountdown(0);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -400,6 +439,8 @@ export default function RegisterScreen() {
                   keyboardType="number-pad"
                   maxLength={1}
                   ref={ref => otpInputs.current[index] = ref}
+                  textContentType="oneTimeCode"
+                  autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'off'}
                 />
               ))}
             </View>
@@ -416,12 +457,23 @@ export default function RegisterScreen() {
 
             {useMobile && (
               <TouchableOpacity 
-                style={[styles.resendButton, resendLoading && styles.disabledButton]}
+                style={[
+                  styles.resendButton, 
+                  (resendLoading || countdown > 0) && styles.disabledButton
+                ]}
                 onPress={handleResendOtp}
-                disabled={resendLoading}
+                disabled={resendLoading || countdown > 0}
               >
-                <ThemedText style={styles.resendButtonText}>
-                  {resendLoading ? 'Sending...' : 'Resend OTP'}
+                <ThemedText style={[
+                  styles.resendButtonText,
+                  countdown > 0 && styles.countdownText
+                ]}>
+                  {resendLoading 
+                    ? 'Sending...' 
+                    : countdown > 0 
+                      ? `Resend OTP in ${countdown}s` 
+                      : 'Resend OTP'
+                  }
                 </ThemedText>
               </TouchableOpacity>
             )}
@@ -429,6 +481,35 @@ export default function RegisterScreen() {
             <TouchableOpacity onPress={handleCloseModal}>
               <ThemedText style={styles.cancelText}>Cancel</ThemedText>
             </TouchableOpacity>
+
+            {/* <TouchableOpacity 
+              style={styles.pasteButton}
+              onPress={async () => {
+                try {
+                  const clipboardContent = await Clipboard.getStringAsync();
+                  // Check if clipboard contains a 6-digit number
+                  const otpRegex = /\b\d{6}\b/;
+                  const match = clipboardContent.match(otpRegex);
+                  
+                  if (match && match[0]) {
+                    const clipboardOtp = match[0].split('');
+                    setOtp(clipboardOtp);
+                  } else {
+                    Toast.show({
+                      type: 'error',
+                      text1: 'Invalid OTP',
+                      text2: 'No valid 6-digit code found in clipboard',
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to read clipboard:', error);
+                }
+              }}
+            >
+              <ThemedText style={styles.pasteButtonText}>
+                Paste from clipboard
+              </ThemedText>
+            </TouchableOpacity> */}
           </View>
         </View>
       </Modal>
@@ -701,5 +782,22 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
     borderColor: '#999',
+  },
+  countdownText: {
+    color: '#2ecc71',
+    fontWeight: '600',
+  },
+  pasteButton: {
+    backgroundColor: '#6949FF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  pasteButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
