@@ -412,17 +412,13 @@ export default function HomeScreen() {
 
   // Add console logs to debug
   useEffect(() => {
-    dispatch(fetchCategories());
-
-    // Check if user is authenticated before fetching recent templates
+    // Only fetch if authenticated
     if (isAuthenticated) {
-      console.log('Fetching recent templates...');
-      dispatch(fetchRecentTemplates())
-        .then((action) => {
-          console.log('Recent templates response:', action);
-        });
+      // Fetch categories and recent templates
+      dispatch(fetchCategories());
+      dispatch(fetchRecentTemplates());
     }
-  }, [dispatch, isAuthenticated]);
+  }, [isAuthenticated, dispatch]);
 
   // Add console log to check the state
   console.log('Recent templates state:', {
