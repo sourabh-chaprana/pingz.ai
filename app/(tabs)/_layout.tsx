@@ -2,8 +2,27 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Image } from 'react-native';
 import { createElevation } from '../../utils/styles';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootState } from '@/src/store';
 
 export default function TabLayout() {
+  const router = useRouter();
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token || !isAuthenticated) {
+        router.replace('/login');
+      }
+    };
+
+    checkAuth();
+  }, [isAuthenticated]);
+
   return (
     <Tabs
       screenOptions={{

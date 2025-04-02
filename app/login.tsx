@@ -14,6 +14,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { maybeCompleteAuthSession } from 'expo-web-browser';
+import { setTokens } from '../src/features/auth/authSlice';
 
 const { width } = Dimensions.get('window');
 
@@ -152,20 +153,30 @@ export default function LoginScreen() {
         console.log('Login API response:', result);
         
         if (result) {
+          // Store the tokens in AsyncStorage
+          await AsyncStorage.setItem('auth_token', result.idToken);
+          await AsyncStorage.setItem('refreshToken', result.refreshToken || '');
+          
+          // Update Redux store
+          dispatch(setTokens({ 
+            token: result.idToken, 
+            refreshToken: result.refreshToken 
+          }));
+
           Toast.show({
             type: 'success',
             text1: 'Success',
             text2: result.message || 'Login successful',
           });
-          
-          // Add slight delay to allow state to update before navigation
+
+          // Navigate to the home tab with a slight delay to allow state updates
           setTimeout(() => {
             router.replace('/(tabs)');
-          }, 300); // Increased delay for mobile
+          }, 100);
         }
       }
     } catch (error) {
-      console.error('Login error details:', error);
+      console.error('Login error:', error);
       Toast.show({
         type: 'error',
         text1: 'Login Failed',

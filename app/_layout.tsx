@@ -41,7 +41,7 @@ import { useRouter } from "expo-router";
 import { searchTemplates } from "@/src/features/search/searchThunks";
 import { clearSearch } from "@/src/features/search/searchSlice";
 import SearchResults from "@/app/SearchResult";
-import { logoutUser } from "@/src/features/auth/authSlice";
+import { logoutUser, setTokens } from "@/src/features/auth/authSlice";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -492,76 +492,105 @@ function DrawerNavigator() {
   );
 }
 
-export default function RootLayout() {
+// Create a new wrapper component that only contains the Provider
+function ProviderWrapper() {
   const colorScheme = useColorScheme();
+  
+  return (
+    <Provider store={store}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <AppContent />
+      </ThemeProvider>
+    </Provider>
+  );
+}
+
+// Move the main app content to a separate component
+function AppContent() {
+  // Common hooks
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  
+  // State
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
   const [isAppReady, setIsAppReady] = useState(false);
   const [isTokenLoaded, setIsTokenLoaded] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
-  // Create the animated scroll value
-  const scrollY = React.useRef(new Animated.Value(0)).current;
-
+  // First effect to load resources and check auth
   useEffect(() => {
     async function prepare() {
       try {
-        // Load fonts and any other resources here
         if (loaded) {
-          // Wait for a short delay to show the splash screen
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds splash visibility
+          const token = await AsyncStorage.getItem('auth_token');
+          const refreshToken = await AsyncStorage.getItem('refreshToken');
+
+          if (token) {
+            dispatch(setTokens({ token, refreshToken }));
+          }
+
+          // Wait for splash screen
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           setIsAppReady(true);
+          setIsTokenLoaded(true);
+          
+          // Set the initial route but don't navigate yet
+          setInitialRoute(token ? '/(tabs)' : '/login');
         }
       } catch (e) {
         console.warn(e);
+        setInitialRoute('/login');
+        setIsTokenLoaded(true);
       }
     }
 
     prepare();
-  }, [loaded]);
+  }, [loaded, dispatch]);
 
+  // Separate effect for navigation after component is mounted
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    
+    if (isAppReady && isTokenLoaded && initialRoute) {
+      // Add a small delay to ensure component is fully mounted
+      timeout = setTimeout(() => {
+        router.replace(initialRoute);
+      }, 100);
+    }
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [isAppReady, isTokenLoaded, initialRoute, router]);
+
+  // Handle splash screen
   useEffect(() => {
     if (isAppReady) {
-      // Hide the splash screen once everything is ready
       SplashScreen.hideAsync();
     }
   }, [isAppReady]);
 
-  useEffect(() => {
-    // Check if token exists on app startup
-    const loadToken = async () => {
-      try {
-        const token = await AsyncStorage.getItem("auth_token");
-
-        // If no token is found, you might want to redirect to login
-        // depending on your app's requirements
-
-        setIsTokenLoaded(true);
-      } catch (error) {
-        console.error("Failed to load authentication token:", error);
-        setIsTokenLoaded(true);
-      }
-    };
-
-    loadToken();
-  }, []);
-
   if (!loaded || !isAppReady || !isTokenLoaded) {
-    // Show custom splash screen while loading
     return <CustomSplashScreen />;
   }
 
   return (
-    <Provider store={store}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <ScrollProvider value={{ scrollY }}>
-          <DrawerNavigator />
-          <StatusBar style="auto" />
-          <Toast />
-        </ScrollProvider>
-      </ThemeProvider>
-    </Provider>
+    <ScrollProvider value={{ scrollY }}>
+      <DrawerNavigator />
+      <StatusBar style="auto" />
+      <Toast />
+    </ScrollProvider>
   );
+}
+
+// Export the wrapper component
+export default function RootLayout() {
+  return <ProviderWrapper />;
 }
 
 const { width, height } = Dimensions.get("window");
