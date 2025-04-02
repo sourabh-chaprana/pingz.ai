@@ -410,14 +410,26 @@ export default function HomeScreen() {
   // Add state to track current recent design index
   const [recentDesignIndex, setRecentDesignIndex] = useState(0);
 
+  // Add console logs to debug
   useEffect(() => {
     dispatch(fetchCategories());
 
     // Check if user is authenticated before fetching recent templates
     if (isAuthenticated) {
-      dispatch(fetchRecentTemplates());
+      console.log('Fetching recent templates...');
+      dispatch(fetchRecentTemplates())
+        .then((action) => {
+          console.log('Recent templates response:', action);
+        });
     }
   }, [dispatch, isAuthenticated]);
+
+  // Add console log to check the state
+  console.log('Recent templates state:', {
+    recentTemplates,
+    loadingRecentTemplates,
+    recentTemplatesError
+  });
 
   return (
     <ThemedView style={styles.container}>
