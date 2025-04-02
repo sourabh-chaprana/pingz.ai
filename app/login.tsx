@@ -210,21 +210,27 @@ export default function LoginScreen() {
     try {
       setOtpVerificationLoading(true);
       
-      // Verify OTP for mobile login
+      // Login with OTP
       const payload = { 
         otp: otpCode,
-        txnId: txnId
+        txnId: txnId,
+        mobileNumber,
+        loginType: 'mobile' // Add this to differentiate from email login
       };
       
       const result = await dispatch(login(payload)).unwrap();
       
-      if (result && (result.success || result.idToken)) {
-        // If the API returned tokens, store them
-        if (result.idToken) {
-          await Storage.setItem('token', result.idToken);
-          await Storage.setItem('refreshToken', result.refreshToken || '');
-        }
+      if (result && result.idToken) {
+        // Store the tokens in AsyncStorage
+        await AsyncStorage.setItem('auth_token', result.idToken);
+        await AsyncStorage.setItem('refreshToken', result.refreshToken || '');
         
+        // Update Redux store
+        dispatch(setTokens({ 
+          token: result.idToken, 
+          refreshToken: result.refreshToken 
+        }));
+
         Toast.show({
           type: 'success',
           text1: 'Success',
@@ -237,9 +243,7 @@ export default function LoginScreen() {
         setTxnId('');
         
         // Navigate to main app
-        setTimeout(() => {
-          router.replace('/(tabs)');
-        }, 300);
+        router.replace('/(tabs)');
       } else {
         Toast.show({
           type: 'error',
@@ -248,6 +252,7 @@ export default function LoginScreen() {
         });
       }
     } catch (error) {
+      console.error('OTP verification error:', error);
       Toast.show({
         type: 'error',
         text1: 'Verification Failed',
