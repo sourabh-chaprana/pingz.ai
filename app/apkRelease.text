@@ -1,0 +1,32 @@
+first
+
+sudo apt update
+sudo apt install openjdk-17-jdk
+
+second
+
+echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
+source ~/.bashrc
+
+third
+java -version
+echo $JAVA_HOME
+
+fourth
+
+# Go back to your project directory
+cd ~/MyNativeProject/pingz
+
+# Clean and rebuild the Android project
+rm -rf android
+npx expo prebuild --platform android
+
+# Navigate to Android directory and build
+cd android
+./gradlew assembleRelease
+
+
+
+fivth
+
+~/MyNativeProject/pingz/android/app/build/outputs/apk/release/app-release.apk

@@ -204,11 +204,11 @@ function CustomDrawerContent(props: any) {
         label="My Templates"
         onPress={() => props.navigation.navigate("myTemplates")}
       />
-      <MenuItem
+      {/* <MenuItem
         icon="help-circle-outline"
         label="Ask Canva"
         onPress={() => props.navigation.navigate("ask")}
-      />
+      /> */}
       <MenuItem
         icon="list-outline"
         label="Transactions"
