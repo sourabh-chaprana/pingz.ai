@@ -45,7 +45,19 @@ export default function TemplateCategories() {
   };
   
   const renderTemplateItem = ({ item }: { item: Template }) => (
-    <View style={styles.templateCard}>
+    <TouchableOpacity 
+      style={styles.templateCard}
+      onPress={() => {
+        console.log('Navigating to template editor with ID:', item.id);
+        router.push({
+          pathname: '/template-editor/[id]',
+          params: { 
+            id: item.id,
+            category: item.category || category
+          }
+        });
+      }}
+    >
       <View style={styles.templateImageContainer}>
         <Image 
           source={{ uri: item.url || 'https://via.placeholder.com/150' }} 
@@ -59,32 +71,9 @@ export default function TemplateCategories() {
         )}
       </View>
       <View style={styles.templateContent}>
-        <View style={styles.templateInfo}>
-          <ThemedText style={styles.templateTitle}>{item.templateName}</ThemedText>
-          {item.description && (
-            <ThemedText style={styles.templateDescription}>{item.description}</ThemedText>
-          )}
-          <View style={styles.categoryTag}>
-            <ThemedText style={styles.categoryText}>{item.category || category}</ThemedText>
-          </View>
-        </View>
-        <TouchableOpacity 
-          style={styles.useTemplateButton}
-          onPress={() => {
-            console.log('Navigating to template editor with ID:', item.id);
-            router.push({
-              pathname: '/template-editor/[id]',
-              params: { 
-                id: item.id,
-                category: item.category || category
-              }
-            });
-          }}
-        >
-          <ThemedText style={styles.useTemplateText}>Use Template</ThemedText>
-        </TouchableOpacity>
+        <ThemedText style={styles.templateTitle}>{item.templateName}</ThemedText>
       </View>
-    </View>
+    </TouchableOpacity>
   );
   
   // If not authenticated, don't render anything (redirection happens in useEffect)
@@ -133,6 +122,8 @@ export default function TemplateCategories() {
           renderItem={renderTemplateItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.templateGrid}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -180,11 +171,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   templateGrid: {
-    padding: 16,
+    padding: 8,
+  },
+  row: {
+    flex: 1,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   templateCard: {
-    width: '100%',
-    marginBottom: 16,
+    width: '48%',
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#fff',
@@ -196,7 +191,7 @@ const styles = StyleSheet.create({
   },
   templateImageContainer: {
     width: '100%',
-    height: 200,
+    aspectRatio: 1,
     position: 'relative',
   },
   templateImage: {
@@ -204,33 +199,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   templateContent: {
-    padding: 16,
-  },
-  templateInfo: {
-    marginBottom: 16,
+    padding: 12,
   },
   templateTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 8,
-  },
-  templateDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  categoryTag: {
-    backgroundColor: '#F5F7FA',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  categoryText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
   },
   premiumBadge: {
     position: 'absolute',
@@ -262,22 +236,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
-  },
-  useTemplateButton: {
-    backgroundColor: '#8B3DFF',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    elevation: 2,
-    shadowColor: '#8B3DFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  useTemplateText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 }); 
