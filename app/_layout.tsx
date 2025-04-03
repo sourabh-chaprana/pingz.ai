@@ -20,6 +20,7 @@ import {
   ActivityIndicator,
   Keyboard,
   ScrollView,
+  BackHandler,
 } from "react-native";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -34,7 +35,7 @@ import { RootState } from "../src/store";
 import React from "react";
 import Toast from "react-native-toast-message";
 import { ThemedText } from "@/components/ThemedText";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchRecentTemplates } from "@/src/features/home/homeThunks";
 import { useRouter } from "expo-router";
@@ -42,6 +43,7 @@ import { searchTemplates } from "@/src/features/search/searchThunks";
 import { clearSearch } from "@/src/features/search/searchSlice";
 import SearchResults from "@/app/SearchResult";
 import { logoutUser, setTokens } from "@/src/features/auth/authSlice";
+import { Slot } from 'expo-router';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -437,21 +439,132 @@ function SearchHeader({ navigation }: { navigation: any }) {
   );
 }
 
+function AppContent() {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  
+  const [loaded] = useFonts({
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+  });
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  // Define checkAuthAndRedirect with router as parameter
+  const checkAuthAndRedirect = async () => {
+    try {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token && router.pathname !== '/login') {
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      router.push('/login');
+    }
+  };
+
+  // Initial setup effect
+  useEffect(() => {
+    async function prepare() {
+      try {
+        if (loaded) {
+          const token = await AsyncStorage.getItem('auth_token');
+          const refreshToken = await AsyncStorage.getItem('refreshToken');
+
+          if (token) {
+            dispatch(setTokens({ token, refreshToken }));
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          setIsAppReady(true);
+        }
+      } catch (e) {
+        console.warn(e);
+        setIsAppReady(true);
+      }
+    }
+
+    prepare();
+  }, [loaded, dispatch]);
+
+  // Auth check effect
+  useEffect(() => {
+    if (!isAppReady) return;
+    checkAuthAndRedirect();
+  }, [isAppReady, isAuthenticated]);
+
+  // Add back handler effect
+  useFocusEffect(
+    React.useCallback(() => {
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        async () => {
+          const token = await AsyncStorage.getItem('auth_token');
+          if (!token) {
+            router.push('/login');
+            return true;
+          }
+          return false;
+        }
+      );
+
+      return () => backHandler.remove();
+    }, [router])
+  );
+
+  // Handle splash screen
+  useEffect(() => {
+    if (isAppReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [isAppReady]);
+
+  if (!loaded || !isAppReady) {
+    return <CustomSplashScreen />;
+  }
+
+  // Return Slot for initial render
+  if (!isAuthenticated) {
+    return <Slot />;
+  }
+
+  // Return DrawerNavigator for authenticated users
+  return (
+    <ScrollProvider value={{ scrollY }}>
+      <DrawerNavigator />
+      <StatusBar style="auto" />
+      <Toast />
+    </ScrollProvider>
+  );
+}
+
 function DrawerNavigator() {
+  const router = useRouter();
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated
   );
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token && router.pathname !== '/login') {
+        router.push('/login');
+      }
+    };
+
+    checkAuth();
+  }, [isAuthenticated, router]);
 
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={({ navigation }) => ({
-        headerShown: isAuthenticated, // Only show header when authenticated
-        header: () => <SearchHeader navigation={navigation} />,
+        headerShown: isAuthenticated,
+        header: () => isAuthenticated ? <SearchHeader navigation={navigation} /> : null,
         headerStyle: {
           backgroundColor: "transparent",
-          elevation: 0, // Remove shadow on Android
-          shadowOpacity: 0, // Remove shadow on iOS
+          elevation: 0,
+          shadowOpacity: 0,
         },
         headerTintColor: "#333",
         drawerStyle: {
@@ -468,22 +581,24 @@ function DrawerNavigator() {
           title: "Home",
         }}
       />
+      <Drawer.Screen name="login" options={{ 
+        title: "Login",
+        drawerItemStyle: { display: 'none' },
+        swipeEnabled: false,
+      }} />
       {isAuthenticated && (
         <>
           <Drawer.Screen name="brand" options={{ title: "Brand" }} />
           <Drawer.Screen name="apps" options={{ title: "Apps" }} />
           <Drawer.Screen name="myTemplates" options={{ title: "My Templates" }} />
           <Drawer.Screen name="ask" options={{ title: "Ask Canva" }} />
-          <Drawer.Screen
-            name="transaction"
-            options={{ title: "Transactions" }}
-          />
+          <Drawer.Screen name="transaction" options={{ title: "Transactions" }} />
           <Drawer.Screen name="trash" options={{ title: "Trash" }} />
           <Drawer.Screen
             name="template-editor/[id]"
             options={{
               title: "Template Editor",
-              drawerItemStyle: { display: "none" }, // Hide from drawer list
+              drawerItemStyle: { display: "none" },
             }}
           />
         </>
@@ -492,8 +607,8 @@ function DrawerNavigator() {
   );
 }
 
-// Create a new wrapper component that only contains the Provider
-function ProviderWrapper() {
+// Export the wrapper component
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   
   return (
@@ -503,94 +618,6 @@ function ProviderWrapper() {
       </ThemeProvider>
     </Provider>
   );
-}
-
-// Move the main app content to a separate component
-function AppContent() {
-  // Common hooks
-  const router = useRouter();
-  const dispatch = useDispatch();
-  const scrollY = React.useRef(new Animated.Value(0)).current;
-  
-  // State
-  const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [isTokenLoaded, setIsTokenLoaded] = useState(false);
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
-
-  // First effect to load resources and check auth
-  useEffect(() => {
-    async function prepare() {
-      try {
-        if (loaded) {
-          const token = await AsyncStorage.getItem('auth_token');
-          const refreshToken = await AsyncStorage.getItem('refreshToken');
-
-          if (token) {
-            dispatch(setTokens({ token, refreshToken }));
-          }
-
-          // Wait for splash screen
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          setIsAppReady(true);
-          setIsTokenLoaded(true);
-          
-          // Set the initial route but don't navigate yet
-          setInitialRoute(token ? '/(tabs)' : '/login');
-        }
-      } catch (e) {
-        console.warn(e);
-        setInitialRoute('/login');
-        setIsTokenLoaded(true);
-      }
-    }
-
-    prepare();
-  }, [loaded, dispatch]);
-
-  // Separate effect for navigation after component is mounted
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    
-    if (isAppReady && isTokenLoaded && initialRoute) {
-      // Add a small delay to ensure component is fully mounted
-      timeout = setTimeout(() => {
-        router.replace(initialRoute);
-      }, 100);
-    }
-
-    return () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    };
-  }, [isAppReady, isTokenLoaded, initialRoute, router]);
-
-  // Handle splash screen
-  useEffect(() => {
-    if (isAppReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [isAppReady]);
-
-  if (!loaded || !isAppReady || !isTokenLoaded) {
-    return <CustomSplashScreen />;
-  }
-
-  return (
-    <ScrollProvider value={{ scrollY }}>
-      <DrawerNavigator />
-      <StatusBar style="auto" />
-      <Toast />
-    </ScrollProvider>
-  );
-}
-
-// Export the wrapper component
-export default function RootLayout() {
-  return <ProviderWrapper />;
 }
 
 const { width, height } = Dimensions.get("window");

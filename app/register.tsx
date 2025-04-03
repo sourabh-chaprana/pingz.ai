@@ -85,12 +85,12 @@ export default function RegisterScreen() {
         
         const result = await dispatch(register(payload)).unwrap();
         if (result) {
-          console.log('Mobile registration started:', result);
           
           // Store transaction ID for OTP verification
-          if (result.txnId) {
-            setTxnId(result.txnId);
-          }
+            setTxnId(result?.txnId);
+
+            console.log('Mobile registration started:', result,);
+
           
           Toast.show({
             type: 'success',
@@ -146,6 +146,7 @@ export default function RegisterScreen() {
           setName('');
           setPassword('');
           setShowOtpModal(true);
+          setTxnId(result?.txnId);
         }
       }
     } catch (error) {
@@ -185,7 +186,7 @@ export default function RegisterScreen() {
       
       // Create payload based on whether we're using email or mobile
       const payload: VerifyOtpCredentials = { code: otpCode };
-      
+      console.log('txnId-----', txnId);
       if (txnId) {
         payload.txnId = txnId;
       } else if (!useMobile) {
