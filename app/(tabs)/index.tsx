@@ -477,7 +477,7 @@ export default function HomeScreen() {
         </View>
 
         {/* AI Features section - now scrollable */}
-        <View style={styles.aiFeaturesSection}>
+        {/* <View style={styles.aiFeaturesSection}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -491,7 +491,7 @@ export default function HomeScreen() {
               />
             ))}
           </ScrollView>
-        </View>
+        </View> */}
 
         {/* What's new section */}
         <View style={styles.sectionContainer}>
@@ -723,9 +723,9 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   whatsNewCard: {
-    width: 260,
+    width: 170,
     height: 140,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginRight: 12,
     overflow: "hidden",
@@ -738,8 +738,8 @@ const styles = StyleSheet.create({
   },
   whatsNewTitle: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 14,
+    fontWeight: "600",
     maxWidth: "80%",
     zIndex: 1,
     textShadowColor: "rgba(0, 0, 0, 0.3)",
@@ -839,9 +839,9 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   recentDesignCard: {
-    width: 260,
-    height: 140,
-    borderRadius: 16,
+    width: 170,
+    height: 150,
+    borderRadius: 12,
     padding: 0, // Remove padding to allow image to fill
     marginRight: 12,
     overflow: "hidden",
@@ -863,13 +863,13 @@ const styles = StyleSheet.create({
   },
   recentDesignInfo: {
     zIndex: 1,
-    padding: 16, // Add padding to the info container instead of the card
+    padding: 10, // Add padding to the info container instead of the card
     width: "100%",
     backgroundColor: "rgba(0, 0, 0, 0.3)", // Add a semi-transparent background
   },
   recentDesignTitle: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 1, height: 1 },
@@ -879,13 +879,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     opacity: 0.9,
-    marginTop: 4,
+    marginTop: 2,
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   errorText: {
     color: "#ff4444",

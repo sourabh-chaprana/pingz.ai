@@ -382,7 +382,7 @@ function SearchHeader({ navigation }: { navigation: any }) {
               />
             </Animated.View>
 
-            <Animated.View
+            {/* <Animated.View
               style={[searchStyles.notificationButtonContainer, searchBarStyle]}
             >
               <TouchableOpacity
@@ -391,7 +391,7 @@ function SearchHeader({ navigation }: { navigation: any }) {
               >
                 <Ionicons name="notifications-outline" size={24} color="#333" />
               </TouchableOpacity>
-            </Animated.View>
+            </Animated.View> */}
           </View>
         </>
       ) : (
@@ -591,9 +591,7 @@ function DrawerNavigator() {
           <Drawer.Screen name="brand" options={{ title: "Brand" }} />
           <Drawer.Screen name="apps" options={{ title: "Apps" }} />
           <Drawer.Screen name="myTemplates" options={{ title: "My Templates" }} />
-          <Drawer.Screen name="ask" options={{ title: "Ask Canva" }} />
-          <Drawer.Screen name="transaction" options={{ title: "Transactions" }} />
-          <Drawer.Screen name="trash" options={{ title: "Trash" }} />
+      
           <Drawer.Screen
             name="template-editor/[id]"
             options={{

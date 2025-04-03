@@ -26,6 +26,7 @@ interface ResendOtpCredentials {
 }
 
 interface LoginResponse {
+  txnId: any;
   idToken: string;
   refreshToken: string;
   message: string;
