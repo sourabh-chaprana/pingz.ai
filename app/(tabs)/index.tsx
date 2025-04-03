@@ -140,7 +140,7 @@ function WhatsNewCard({
       />
       <View style={styles.whatsNewOverlay}>
         <ThemedText style={styles.whatsNewTitle}>
-          {title}
+          {toCamelCase(title)}
         </ThemedText>
       </View>
     </TouchableOpacity>
@@ -369,7 +369,6 @@ function RecentDesignCard({
   const router = useRouter();
 
   const handlePress = () => {
-    // Navigate to the template editor with the template ID
     router.push(`/template-editor/${id}`);
   };
 
@@ -381,8 +380,12 @@ function RecentDesignCard({
         resizeMode="cover"
       />
       <View style={styles.recentDesignInfo}>
-        <ThemedText style={styles.recentDesignTitle}>{title}</ThemedText>
-        <ThemedText style={styles.recentDesignType}>{description}</ThemedText>
+        <ThemedText style={styles.recentDesignTitle}>
+          {toCamelCase(title)}
+        </ThemedText>
+        <ThemedText style={styles.recentDesignType}>
+          {toCamelCase(description)}
+        </ThemedText>
       </View>
     </TouchableOpacity>
   );
@@ -591,8 +594,9 @@ export default function HomeScreen() {
                 pagingEnabled
                 onScroll={(event) => {
                   const scrollX = event.nativeEvent.contentOffset.x;
-                  const index = Math.round(scrollX / (styles.whatsNewCard.width + 12));
-                  setCurrentWhatsNewIndex(index);
+                  const itemWidth = 182; // card width (170) + margin (12)
+                  const currentIndex = Math.round(scrollX / itemWidth);
+                  setCurrentWhatsNewIndex(currentIndex);
                 }}
                 scrollEventThrottle={16}
               >
@@ -760,7 +764,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryName: {
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
     marginTop: 5,
     width: '100%', // Ensure text has enough space
@@ -824,14 +828,23 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   whatsNewCard: {
-    width: 280,
-    height: 180,
+    width: 170,
+    height: 150,
     borderRadius: 12,
     marginRight: 12,
     overflow: "hidden",
     position: "relative",
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
   whatsNewImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
     width: "100%",
     height: "100%",
   },
@@ -840,13 +853,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    padding: 10,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   whatsNewTitle: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   paginationDots: {
     flexDirection: "row",
@@ -936,17 +952,17 @@ const styles = StyleSheet.create({
     width: 170,
     height: 150,
     borderRadius: 12,
-    padding: 0, // Remove padding to allow image to fill
+    padding: 0,
     marginRight: 12,
     overflow: "hidden",
-    justifyContent: "flex-end", // Changed to flex-end to position content at bottom
+    justifyContent: "flex-end",
     backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    position: "relative", // Make sure this is set for absolute positioning of children
+    position: "relative",
   },
   recentDesignImage: {
     position: "absolute",
@@ -957,9 +973,9 @@ const styles = StyleSheet.create({
   },
   recentDesignInfo: {
     zIndex: 1,
-    padding: 10, // Add padding to the info container instead of the card
+    padding: 10,
     width: "100%",
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Add a semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   recentDesignTitle: {
     color: "#fff",
@@ -995,8 +1011,8 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   comingSoonCard: {
-    width: 170, // Match recent design card width
-    height: 150, // Match recent design card height
+    width: 170,
+    height: 150,
     backgroundColor: '#f8f8f8',
     borderRadius: 12,
     marginRight: 12,
@@ -1017,14 +1033,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   comingSoonTitle: {
-    fontSize: 16, // Smaller to match recent design card
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#8B3DFF',
     marginTop: 8,
     marginBottom: 4,
   },
   comingSoonText: {
-    fontSize: 12, // Smaller to match recent design card
+    fontSize: 12,
     color: '#666',
     textAlign: 'center',
     lineHeight: 16,

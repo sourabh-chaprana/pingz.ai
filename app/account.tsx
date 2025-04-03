@@ -18,6 +18,11 @@ import { fetchUserData, updateUserData } from '../src/features/accounts/accounts
 import { resetUpdateStatus } from '../src/features/accounts/accountSlice';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { 
+  withTiming, 
+  useAnimatedStyle, 
+  useSharedValue 
+} from 'react-native-reanimated';
 
 // Try to import image picker, but don't fail if it's not available
 let ImagePicker: any = null;
@@ -65,6 +70,14 @@ export default function AccountScreen() {
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [footerFile, setFooterFile] = useState<File | null>(null);
+
+  // Add state for section collapse
+  const [expandedSection, setExpandedSection] = useState<string>('personal');
+  
+  // Function to handle section toggle
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? '' : section);
+  };
 
   // Load user data on component mount
   useEffect(() => {
@@ -403,6 +416,78 @@ export default function AccountScreen() {
     );
   };
 
+  // Section render helper
+  const renderSection = (
+    id: string,
+    title: string,
+    icon: string,
+    children: React.ReactNode
+  ) => {
+    const isExpanded = expandedSection === id;
+
+    return (
+      <View style={styles.section}>
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => toggleSection(id)}
+        >
+          <View style={styles.sectionHeaderLeft}>
+            <Ionicons name={icon} size={24} color="#8B3DFF" />
+            <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+          </View>
+          <Ionicons 
+            name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+            size={24} 
+            color="#8B3DFF" 
+          />
+        </TouchableOpacity>
+        
+        {isExpanded && (
+          <View style={styles.sectionContent}>
+            {children}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Update the profile header section
+  const ProfileHeader = () => {
+    return (
+      <View style={styles.profileHeader}>
+        <View style={styles.profileHeaderContent}>
+          {/* Left side - Profile Image */}
+          <TouchableOpacity onPress={() => pickImage('profile')}>
+            <View style={styles.profileImageContainer}>
+              {profilePreview ? (
+                <Image source={{ uri: profilePreview }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.profilePlaceholder}>
+                  <Ionicons name="person" size={40} color="#8B3DFF" />
+                </View>
+              )}
+              <View style={styles.cameraIconOverlay}>
+                <Ionicons name="camera" size={20} color="#fff" />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Right side - User Info */}
+          <View style={styles.userInfoContainer}>
+            <ThemedText style={styles.profileName}>
+              {userData?.firstName} {userData?.lastName || ''}
+            </ThemedText>
+            <ThemedText style={styles.profileEmail}>{userData?.email}</ThemedText>
+            <View style={styles.proBadge}>
+              <Ionicons name="star" size={14} color="#fff" />
+              <ThemedText style={styles.proBadgeText}>PRO</ThemedText>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   if (loading && !userData) {
     return (
       <View style={styles.loadingContainer}>
@@ -417,127 +502,109 @@ export default function AccountScreen() {
       style={{ flex: 1 }}
     >
       <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText style={styles.title}>Account Settings</ThemedText>
-        </View>
+        {/* Profile Header Section */}
+        <ProfileHeader />
 
-        {error && (
-          <View style={styles.errorContainer}>
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-          </View>
-        )}
-
-        {/* Profile Section */}
-        <View style={styles.profileSection}>
-          <TouchableOpacity onPress={() => pickImage('profile')}>
-            {profilePreview ? (
-              <View style={styles.profileImageWrapper}>
-                <Image source={{ uri: profilePreview }} style={styles.profileImage} />
-                {profileImagePath && (
-                  <View style={styles.profileNewBadge}>
-                    <Text style={styles.newBadgeText}>New</Text>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <View style={styles.profilePlaceholder}>
-                <Ionicons name="person" size={50} color="#ccc" />
-              </View>
-            )}
-            <View style={styles.changePhotoButton}>
-              <ThemedText style={styles.changePhotoText}>Change Photo</ThemedText>
-            </View>
-          </TouchableOpacity>
-          <ThemedText style={styles.profileName}>
-            {userData?.firstName} {userData?.lastName || ''}
-          </ThemedText>
-          <ThemedText style={styles.profileEmail}>{userData?.email}</ThemedText>
-          {userData?.membership && (
-            <View style={styles.membershipBadge}>
-              <ThemedText style={styles.membershipText}>{userData.membership}</ThemedText>
-            </View>
-          )}
-        </View>
-
-        {/* Form Fields */}
         <View style={styles.formContainer}>
-          {/* Disabled Fields */}
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>First Name</ThemedText>
-            <TextInput
-              style={[styles.input, styles.disabledInput]}
-              value={userData?.firstName || ''}
-              editable={false}
-            />
-          </View>
+          {/* Personal Information Section */}
+          {renderSection('personal', 'Personal Information', 'person-circle-outline', (
+            <>
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>First Name</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.disabledInput]}
+                  value={userData?.firstName || ''}
+                  editable={false}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Last Name</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.disabledInput]}
+                  value={userData?.lastName || ''}
+                  editable={false}
+                />
+              </View>
+            </>
+          ))}
 
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Last Name</ThemedText>
-            <TextInput
-              style={[styles.input, styles.disabledInput]}
-              value={userData?.lastName || ''}
-              editable={false}
-            />
-          </View>
+          {/* Contact Information Section */}
+          {renderSection('contact', 'Contact Information', 'call-outline', (
+            <>
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Email</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.disabledInput]}
+                  value={userData?.email || ''}
+                  editable={false}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Mobile Number</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  value={mobileNumber}
+                  onChangeText={setMobileNumber}
+                  placeholder="Enter your mobile number"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </>
+          ))}
 
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Email</ThemedText>
-            <TextInput
-              style={[styles.input, styles.disabledInput]}
-              value={userData?.email || ''}
-              editable={false}
-            />
-          </View>
+          {/* Important Dates Section */}
+          {renderSection('dates', 'Important Dates', 'calendar-outline', (
+            <>
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Date of Birth</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  value={dob}
+                  onChangeText={setDob}
+                  placeholder="YYYY-MM-DD"
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Anniversary Date</ThemedText>
+                <TextInput
+                  style={styles.input}
+                  value={anniversaryDate}
+                  onChangeText={setAnniversaryDate}
+                  placeholder="YYYY-MM-DD"
+                />
+              </View>
+            </>
+          ))}
 
-          {/* Editable Fields */}
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Mobile Number</ThemedText>
-            <TextInput
-              style={styles.input}
-              value={mobileNumber}
-              onChangeText={setMobileNumber}
-              placeholder="Enter your mobile number"
-              keyboardType="phone-pad"
-            />
-          </View>
+          {/* Profile Media Section */}
+          {renderSection('media', 'Profile Media', 'images-outline', (
+            <>
+              {renderImageSection('header', 'Header Image')}
+              {renderImageSection('footer', 'Footer Image')}
+            </>
+          ))}
 
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Date of Birth (YYYY-MM-DD)</ThemedText>
-            <TextInput
-              style={styles.input}
-              value={dob}
-              onChangeText={setDob}
-              placeholder="YYYY-MM-DD"
-              keyboardType="default"
-            />
+          {/* Purpose of Use Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="information-circle-outline" size={24} color="#8B3DFF" />
+              <ThemedText style={styles.sectionTitle}>Purpose of Use</ThemedText>
+            </View>
+            
+            <View style={styles.sectionContent}>
+              <View style={styles.formGroup}>
+                <ThemedText style={styles.label}>Purpose of Use</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={purposeOfUse}
+                  onChangeText={setPurposeOfUse}
+                  placeholder="Enter your purpose of use"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+            </View>
           </View>
-
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Anniversary Date (YYYY-MM-DD)</ThemedText>
-            <TextInput
-              style={styles.input}
-              value={anniversaryDate}
-              onChangeText={setAnniversaryDate}
-              placeholder="YYYY-MM-DD"
-              keyboardType="default"
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Purpose of Use</ThemedText>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={purposeOfUse}
-              onChangeText={setPurposeOfUse}
-              placeholder="Enter your purpose of use"
-              multiline
-              numberOfLines={4}
-            />
-          </View>
-
-          {/* Image Sections */}
-          {renderImageSection('header', 'Header Image')}
-          {renderImageSection('footer', 'Footer Image')}
 
           {/* Submit Button */}
           <TouchableOpacity 
@@ -548,18 +615,12 @@ export default function AccountScreen() {
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <ThemedText style={styles.submitButtonText}>Update Profile</ThemedText>
+              <>
+                <Ionicons name="save-outline" size={20} color="#fff" style={styles.submitIcon} />
+                <ThemedText style={styles.submitButtonText}>Save Changes</ThemedText>
+              </>
             )}
           </TouchableOpacity>
-
-          {!ImagePicker && (
-            <View style={styles.webNoticeContainer}>
-              <Ionicons name="information-circle-outline" size={20} color="#666" />
-              <ThemedText style={styles.webNoticeText}>
-                For better image upload experience, please use the web version at pingz.ai
-              </ThemedText>
-            </View>
-          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -569,132 +630,191 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f5f7fa',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    padding: 20,
-    backgroundColor: '#fff',
+  profileHeader: {
+    // backgroundColor: '#fff',
+    paddingVertical: 20,
+    paddingHorizontal: 30,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  errorContainer: {
-    backgroundColor: '#ffe0e0',
-    padding: 10,
-    marginHorizontal: 20,
-    marginTop: 10,
-    borderRadius: 5,
-  },
-  errorText: {
-    color: '#d32f2f',
-  },
-  profileSection: {
+  profileHeaderContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 20,
   },
-  profileImageWrapper: {
+  profileImageContainer: {
     position: 'relative',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginRight: 16,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   profilePlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
     backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileNewBadge: {
+  cameraIconOverlay: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#4CAF50',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  changePhotoButton: {
-    marginTop: 10,
+    bottom: -2,
+    right: -2,
     backgroundColor: '#8B3DFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  changePhotoText: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 14,
+  userInfoContainer: {
+    flex: 1,
   },
   profileName: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333',
-    marginTop: 15,
+    marginBottom: 4,
   },
   profileEmail: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
-    marginTop: 5,
+    marginBottom: 8,
   },
-  membershipBadge: {
-    marginTop: 10,
+  proBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#8B3DFF',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: '#8B3DFF',
-    borderRadius: 20,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
   },
-  membershipText: {
-    color: 'white',
-    fontWeight: 'bold',
+  proBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   formContainer: {
     padding: 20,
   },
-  formGroup: {
-    marginBottom: 20,
+  section: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 12,
+  },
+  sectionContent: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  inputGroup: {
+    marginBottom: 16,
   },
   label: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#555',
+    fontSize: 14,
     fontWeight: '500',
+    color: '#666',
+    marginBottom: 8,
   },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: '#e1e4e8',
+    borderRadius: 12,
+    padding: 14,
     fontSize: 16,
+    color: '#333',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  disabledInput: {
+    backgroundColor: '#f8f9fa',
+    color: '#999',
   },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  disabledInput: {
-    backgroundColor: '#f0f0f0',
-    color: '#888',
+  submitButton: {
+    flexDirection: 'row',
+    backgroundColor: '#8B3DFF',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    marginBottom: 32,
+    elevation: 4,
+    shadowColor: '#8B3DFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  submitIcon: {
+    marginRight: 8,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   imageContainer: {
+    marginTop: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderColor: '#e1e4e8',
+    borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   imagePreviewContainer: {
     height: 160,
@@ -755,31 +875,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '500',
     marginLeft: 5,
-  },
-  submitButton: {
-    backgroundColor: '#8B3DFF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  webNoticeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  webNoticeText: {
-    marginLeft: 10,
-    color: '#666',
-    fontSize: 14,
-    flex: 1,
   },
 }); 
