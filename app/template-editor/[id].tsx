@@ -70,6 +70,10 @@ export default function TemplateEditor() {
   // Add user data state to store header/footer images
   const userData = useSelector((state: RootState) => state.account.userData);
   console.log('userData----', userData);
+
+  // Add this to track where we came from
+  const category = currentTemplate?.category || params.category;
+
   // Initial data fetching
   useEffect(() => {
     dispatch(fetchTemplateById(templateId));
@@ -631,7 +635,21 @@ export default function TemplateEditor() {
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => {
+            if (category) {
+              // Navigate back to template categories with the correct category
+              router.replace({
+                pathname: '/templateCategories',
+                params: { category }
+              });
+            } else {
+              // Fallback to normal back behavior
+              router.back();
+            }
+          }}
+        >
           <Ionicons name="arrow-back" size={24} color="#8B3DFF" />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>{currentTemplate.templateName}</ThemedText>
