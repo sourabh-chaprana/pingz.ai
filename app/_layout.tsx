@@ -59,6 +59,23 @@ const ScrollContext = React.createContext<{
 export const ScrollProvider = ScrollContext.Provider;
 export const useScrollContext = () => React.useContext(ScrollContext);
 
+
+const toCamelCase = (str: string) => {
+  if (!str) return '';
+  
+  // Convert to camelCase and add spaces
+  const withSpaces = str
+    .split(/[-_\s]+/)
+    .map((word) => {
+      // Always capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+  
+  return withSpaces;
+};
+
+
 // Custom splash screen component
 function CustomSplashScreen() {
   return (
@@ -141,7 +158,7 @@ function RecentDesignsSection({ navigation }: { navigation: any }) {
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {template.templateName}
+                  {toCamelCase(template?.templateName)}
                 </ThemedText>
               </TouchableOpacity>
             ))
