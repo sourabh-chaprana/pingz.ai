@@ -2,6 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "@/src/store";
 import { api } from "@/src/services/api";
 import { Template } from "./homeSlice";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Fetch paginated templates
 export const fetchTemplates = createAsyncThunk<
@@ -39,5 +40,38 @@ export const fetchRecentTemplates = createAsyncThunk<
     return rejectWithValue(
       error.response?.data?.message || "Failed to fetch recent templates"
     );
+  }
+});
+
+// Add new thunks for what's new section
+export const fetchWhatsNewTags = createAsyncThunk<
+  string[],
+  void,
+  { rejectValue: string }
+>("home/fetchWhatsNewTags", async (_, { rejectWithValue }) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    const response = await api.get('/template/whats-new', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || "Failed to fetch what's new tags");
+  }
+});
+
+export const fetchTemplatesByTag = createAsyncThunk<
+  Template[],
+  string,
+  { rejectValue: string }
+>("home/fetchTemplatesByTag", async (tag, { rejectWithValue }) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    const response = await api.get(`/template/search?query=${tag}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || "Failed to fetch templates by tag");
   }
 });

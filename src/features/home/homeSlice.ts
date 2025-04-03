@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { fetchTemplates, fetchRecentTemplates } from "./homeThunks";
+import { fetchTemplates, fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag } from "./homeThunks";
 
 export interface Template {
   id: string;
@@ -45,6 +45,10 @@ interface HomeState {
   error: string | null;
   recentError: string | null;
   pagination: PaginationInfo;
+  whatsNewTags: string[];
+  whatsNewTemplates: { [key: string]: Template[] };
+  whatsNewLoading: boolean;
+  whatsNewError: string | null;
 }
 
 const initialState: HomeState = {
@@ -61,6 +65,10 @@ const initialState: HomeState = {
     hasMore: true,
     isLoadingMore: false,
   },
+  whatsNewTags: [],
+  whatsNewTemplates: {},
+  whatsNewLoading: false,
+  whatsNewError: null,
 };
 
 export const homeSlice = createSlice({
@@ -142,6 +150,22 @@ export const homeSlice = createSlice({
       .addCase(fetchRecentTemplates.rejected, (state, action) => {
         state.recentLoading = false;
         state.recentError = action.payload as string || "Failed to fetch recent templates";
+      })
+      .addCase(fetchWhatsNewTags.pending, (state) => {
+        state.whatsNewLoading = true;
+        state.whatsNewError = null;
+      })
+      .addCase(fetchWhatsNewTags.fulfilled, (state, action) => {
+        state.whatsNewLoading = false;
+        state.whatsNewTags = action.payload;
+      })
+      .addCase(fetchWhatsNewTags.rejected, (state, action) => {
+        state.whatsNewLoading = false;
+        state.whatsNewError = action.payload as string;
+      })
+      .addCase(fetchTemplatesByTag.fulfilled, (state, action) => {
+        const tag = action.meta.arg;
+        state.whatsNewTemplates[tag] = action.payload;
       });
   },
 });

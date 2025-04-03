@@ -21,8 +21,9 @@ import {
   fetchTemplatesByCategory,
   fetchCategories,
 } from "@/src/features/template/templateThunks";
-import { fetchRecentTemplates } from "@/src/features/home/homeThunks";
+import { fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag } from "@/src/features/home/homeThunks";
 import { RootState } from "@/src/store";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Add more icons & categories data
 // const categoryData = [
@@ -121,22 +122,27 @@ const toCamelCase = (str: string) => {
 function WhatsNewCard({
   title,
   imageUrl,
-  color,
+  onPress,
 }: {
   title: string;
   imageUrl: string;
-  color: string;
+  onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.whatsNewCard, { backgroundColor: color }]}>
-      <ThemedText style={styles.whatsNewTitle}>
-        {title} <Ionicons name="chevron-forward" size={16} color="#fff" />
-      </ThemedText>
+    <TouchableOpacity 
+      style={styles.whatsNewCard}
+      onPress={onPress}
+    >
       <Image
         source={{ uri: imageUrl }}
         style={styles.whatsNewImage}
         resizeMode="cover"
       />
+      <View style={styles.whatsNewOverlay}>
+        <ThemedText style={styles.whatsNewTitle}>
+          {title}
+        </ThemedText>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -291,7 +297,7 @@ function WhatsNewSection() {
             key={`${item.id}-${index}`}
             title={item.title}
             imageUrl={item.imageUrl}
-            color={item.color}
+            onPress={() => router.push(`/template-editor/${item.id}`)}
           />
         ))}
       </ScrollView>
@@ -382,6 +388,21 @@ function RecentDesignCard({
   );
 }
 
+// Update the ComingSoonCard component
+function ComingSoonCard() {
+  return (
+    <View style={styles.comingSoonCard}>
+      <View style={styles.comingSoonContent}>
+        <Ionicons name="time-outline" size={32} color="#8B3DFF" />
+        <ThemedText style={styles.comingSoonTitle}>Coming Soon!</ThemedText>
+        <ThemedText style={styles.comingSoonText}>
+          New templates are on the way
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   // Get the scroll context and navigation
   const { scrollY } = useScrollContext();
@@ -427,6 +448,39 @@ export default function HomeScreen() {
 
   // Add state to track current recent design index
   const [recentDesignIndex, setRecentDesignIndex] = useState(0);
+
+  const {
+    whatsNewTags,
+    whatsNewTemplates,
+    whatsNewLoading,
+    whatsNewError
+  } = useSelector((state: RootState) => state.home);
+
+  const [currentWhatsNewIndex, setCurrentWhatsNewIndex] = useState(0);
+
+  useEffect(() => {
+    const fetchWhatsNew = async () => {
+      const result = await dispatch(fetchWhatsNewTags());
+      if (fetchWhatsNewTags.fulfilled.match(result)) {
+        // Fetch templates for each tag
+        result.payload.forEach(tag => {
+          dispatch(fetchTemplatesByTag(tag));
+        });
+      }
+    };
+
+    fetchWhatsNew();
+  }, [dispatch]);
+
+  // Prepare what's new data for display
+  const whatsNewItems = whatsNewTags.flatMap(tag => 
+    (whatsNewTemplates[tag] || []).map(template => ({
+      id: template.id,
+      title: template.templateName,
+      imageUrl: template.url,
+      description: template.description
+    }))
+  );
 
   // Add console logs to debug
   useEffect(() => {
@@ -513,34 +567,60 @@ export default function HomeScreen() {
 
         {/* What's new section */}
         <View style={styles.sectionContainer}>
-          <ThemedText style={styles.sectionTitle}>What's new card</ThemedText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.whatsNewScroll}
-            contentContainerStyle={styles.whatsNewScrollContent}
-            pagingEnabled
-          >
-            {whatsNewData.map((item, index) => (
-              <WhatsNewCard
-                key={item.id}
-                title={item.title}
-                imageUrl={item.imageUrl}
-                color={item.color}
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.paginationDots}>
-            {whatsNewData.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.dot,
-                  { backgroundColor: index === 0 ? "#8B3DFF" : "#D8D8D8" },
-                ]}
-              />
-            ))}
-          </View>
+          <ThemedText style={styles.sectionTitle}>What's new</ThemedText>
+          {whatsNewLoading ? (
+            <ActivityIndicator size="large" color="#8B3DFF" />
+          ) : whatsNewError ? (
+            <ThemedText style={styles.errorText}>{whatsNewError}</ThemedText>
+          ) : whatsNewItems.length === 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.whatsNewScroll}
+              contentContainerStyle={styles.whatsNewScrollContent}
+            >
+              <ComingSoonCard />
+            </ScrollView>
+          ) : (
+            <>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.whatsNewScroll}
+                contentContainerStyle={styles.whatsNewScrollContent}
+                pagingEnabled
+                onScroll={(event) => {
+                  const scrollX = event.nativeEvent.contentOffset.x;
+                  const index = Math.round(scrollX / (styles.whatsNewCard.width + 12));
+                  setCurrentWhatsNewIndex(index);
+                }}
+                scrollEventThrottle={16}
+              >
+                {whatsNewItems.map((item, index) => (
+                  <WhatsNewCard
+                    key={`${item.id}-${index}`}
+                    title={item.title}
+                    imageUrl={item.imageUrl}
+                    onPress={() => router.push(`/template-editor/${item.id}`)}
+                  />
+                ))}
+              </ScrollView>
+              <View style={styles.paginationDots}>
+                {whatsNewItems.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      {
+                        backgroundColor:
+                          currentWhatsNewIndex === index ? "#8B3DFF" : "#D8D8D8",
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
+          )}
         </View>
 
         {/* Recent designs section - now using API data */}
@@ -744,36 +824,29 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   whatsNewCard: {
-    width: 170,
-    height: 140,
+    width: 280,
+    height: 180,
     borderRadius: 12,
-    padding: 16,
     marginRight: 12,
     overflow: "hidden",
-    justifyContent: "flex-start",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    position: "relative",
+  },
+  whatsNewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  whatsNewOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   whatsNewTitle: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
-    maxWidth: "80%",
-    zIndex: 1,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  whatsNewImage: {
-    width: "70%",
-    height: "90%",
-    position: "absolute",
-    bottom: 0,
-    right: -20,
-    opacity: 0.85,
   },
   paginationDots: {
     flexDirection: "row",
@@ -920,5 +993,40 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
     color: "#666",
+  },
+  comingSoonCard: {
+    width: 170, // Match recent design card width
+    height: 150, // Match recent design card height
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  comingSoonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  comingSoonTitle: {
+    fontSize: 16, // Smaller to match recent design card
+    fontWeight: 'bold',
+    color: '#8B3DFF',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  comingSoonText: {
+    fontSize: 12, // Smaller to match recent design card
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
