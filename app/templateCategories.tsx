@@ -9,6 +9,19 @@ import { fetchTemplatesByCategory } from '@/src/features/template/templateThunks
 import { RootState } from '@/src/store';
 import { Template } from '@/src/features/template/templateSlice';
 
+const toCamelCase = (str: string) => {
+  // First convert to camelCase and add spaces
+  const withSpaces = str
+    .split(/[-_\s]+/)
+    .map((word, index) => {
+      // Capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+  
+  return withSpaces;
+};
+
 export default function TemplateCategories() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -71,7 +84,9 @@ export default function TemplateCategories() {
         )}
       </View>
       <View style={styles.templateContent}>
-        <ThemedText style={styles.templateTitle}>{item.templateName}</ThemedText>
+        <ThemedText style={styles.templateTitle}>
+          {toCamelCase(item.templateName)}
+        </ThemedText>
       </View>
     </TouchableOpacity>
   );
@@ -92,7 +107,9 @@ export default function TemplateCategories() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>{category} Templates</ThemedText>
+        <ThemedText style={styles.headerTitle}>
+          {toCamelCase(category)} Templates
+        </ThemedText>
       </View>
       
       {loading ? (

@@ -16,6 +16,21 @@ interface Template {
   premium: boolean;
 }
 
+const toCamelCase = (str: string) => {
+  if (!str) return '';
+  
+  // Convert to camelCase and add spaces
+  const withSpaces = str
+    .split(/[-_\s]+/)
+    .map((word) => {
+      // Always capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+  
+  return withSpaces;
+};
+
 export default function MyTemplates() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -58,10 +73,10 @@ export default function MyTemplates() {
       />
       <View style={styles.cardContent}>
         <ThemedText style={styles.templateName} numberOfLines={1}>
-          {item.templateName}
+          {toCamelCase(item.templateName)}
         </ThemedText>
         <ThemedText style={styles.event} numberOfLines={1}>
-          {item.event}
+          {toCamelCase(item.event)}
         </ThemedText>
       </View>
       {item.premium && (
@@ -149,10 +164,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
+    lineHeight: 20,
   },
   event: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 18,
   },
   premiumBadge: {
     position: 'absolute',

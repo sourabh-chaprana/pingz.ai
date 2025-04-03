@@ -36,6 +36,22 @@ import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { fetchUserData } from '@/src/features/accounts/accountsThunk';
 
+// Update the toCamelCase function to ensure first letter is always capitalized
+const toCamelCase = (str: string) => {
+  if (!str) return '';
+  
+  // First convert to camelCase and add spaces
+  const withSpaces = str
+    .split(/[-_\s]+/)
+    .map((word) => {
+      // Always capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+  
+  return withSpaces;
+};
+
 export default function TemplateEditor() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -639,20 +655,20 @@ export default function TemplateEditor() {
           style={styles.backButton} 
           onPress={() => {
             if (category) {
-              // Navigate back to template categories with the correct category
               router.replace({
                 pathname: '/templateCategories',
                 params: { category }
               });
             } else {
-              // Fallback to normal back behavior
               router.back();
             }
           }}
         >
           <Ionicons name="arrow-back" size={24} color="#8B3DFF" />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>{currentTemplate.templateName}</ThemedText>
+        <ThemedText style={styles.headerTitle}>
+          {toCamelCase(currentTemplate?.templateName || category || '')}
+        </ThemedText>
       </View>
       
       {/* Main Content */}

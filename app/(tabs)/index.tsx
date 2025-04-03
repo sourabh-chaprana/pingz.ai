@@ -102,6 +102,22 @@ const recentDesignsData = [
   },
 ];
 
+// Add the toCamelCase function at the top of the file
+const toCamelCase = (str: string) => {
+  if (!str) return '';
+  
+  // Convert to camelCase and add spaces
+  const withSpaces = str
+    .split(/[-_\s]+/)
+    .map((word) => {
+      // Always capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+  
+  return withSpaces;
+};
+
 function WhatsNewCard({
   title,
   imageUrl,
@@ -313,7 +329,9 @@ function CategoryIcon({
       <View style={[styles.categoryIconContainer, { backgroundColor: color }]}>
         <Ionicons name={icon as any} size={24} color="#fff" />
       </View>
-      <ThemedText style={styles.categoryName}>{name}</ThemedText>
+      <ThemedText style={styles.categoryName}>
+        {toCamelCase(name)}
+      </ThemedText>
     </TouchableOpacity>
   );
 }
@@ -627,7 +645,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(85, 60, 180, 0.3)",
   },
   heroText: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
     textAlign: "center",
@@ -662,8 +680,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryName: {
-    fontSize: 13,
-    textAlign: "center",
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 5,
+    width: '100%', // Ensure text has enough space
+    flexWrap: 'wrap' // Allow text to wrap if needed
   },
   aiFeaturesSection: {
     marginBottom: 24,
