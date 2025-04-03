@@ -30,6 +30,7 @@ export default function RegisterScreen() {
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [countryCode, setCountryCode] = useState('+91');
   
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
@@ -76,10 +77,10 @@ export default function RegisterScreen() {
           return;
         }
         
-        // Create payload for mobile registration (no password needed)
+        // Create payload for mobile registration with country code
         const payload = {
           name,
-          mobileNumber,
+          mobileNumber: `${countryCode}${mobileNumber}`,
           userType
         };
         
@@ -197,26 +198,44 @@ export default function RegisterScreen() {
       
       // Check if verification was successful
       if (result && result.success) {
-        // Explicitly show success toast
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Account verified successfully',
-        });
-        
-        // Clear form and OTP data
-        setShowOtpModal(false);
-        setEmail('');
-        setMobileNumber('');
-        setOtp(['', '', '', '', '', '']);
-        setTxnId('');
-        
-        // Navigate to login only on success
-        setTimeout(() => {
+        // After successful verification, attempt auto-login
+        try {
+          const loginPayload = useMobile 
+            ? { mobileNumber: `${countryCode}${mobileNumber}`, loginType: 'mobile' }
+            : { email, password };
+            
+          const loginResult = await dispatch(login(loginPayload)).unwrap();
+          
+          if (loginResult) {
+            Toast.show({
+              type: 'success',
+              text1: 'Success',
+              text2: 'Registration and login successful',
+            });
+            
+            // Clear form and OTP data
+            setShowOtpModal(false);
+            setEmail('');
+            setMobileNumber('');
+            setOtp(['', '', '', '', '', '']);
+            setTxnId('');
+            
+            // Navigate to home screen
+            setTimeout(() => {
+              router.replace('/(tabs)');
+            }, 300);
+          }
+        } catch (loginError) {
+          console.error('Auto-login failed:', loginError);
+          // If auto-login fails, redirect to login screen
+          Toast.show({
+            type: 'info',
+            text1: 'Registration Successful',
+            text2: 'Please login with your credentials',
+          });
           router.replace('/login');
-        }, 300);
+        }
       } else {
-        // Just hide modal but stay on register page
         Toast.show({
           type: 'info',
           text1: 'Verification Issue',
@@ -225,13 +244,11 @@ export default function RegisterScreen() {
         setShowOtpModal(false);
       }
     } catch (error) {
-      // Ensure error toast is shown
       Toast.show({
         type: 'error',
         text1: 'Verification Failed',
         text2: typeof error === 'string' ? error : 'Invalid OTP',
       });
-      // Stay on register page, don't close modal so user can try again
     } finally {
       setOtpVerificationLoading(false);
     }
@@ -251,7 +268,7 @@ export default function RegisterScreen() {
       }
       const payload = {
         name,
-        mobileNumber,
+        mobileNumber: `${countryCode}${mobileNumber}`,
         userType
       };
       const result = await dispatch(register(payload)).unwrap();
@@ -347,13 +364,23 @@ export default function RegisterScreen() {
         {useMobile ? (
           <>
             <ThemedText style={styles.inputLabel}>Mobile Number</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your mobile number"
-              value={mobileNumber}
-              onChangeText={setMobileNumber}
-              keyboardType="phone-pad"
-            />
+            <View style={styles.phoneContainer}>
+              <View style={styles.countryCode}>
+                <ThemedText style={styles.countryCodeText}>{countryCode}</ThemedText>
+              </View>
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="Enter your mobile number"
+                value={mobileNumber}
+                onChangeText={(text) => {
+                  // Remove any non-numeric characters
+                  const cleanedText = text.replace(/[^0-9]/g, '');
+                  setMobileNumber(cleanedText);
+                }}
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
+            </View>
           </>
         ) : (
           <>
@@ -800,5 +827,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  countryCode: {
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 8,
+    marginRight: 8,
+    minWidth: 65,
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 8,
+    fontSize: 16,
   },
 });
