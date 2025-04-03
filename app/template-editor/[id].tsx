@@ -82,6 +82,7 @@ export default function TemplateEditor() {
   const [addFooter, setAddFooter] = useState(false);
   const [headerImage, setHeaderImage] = useState<string | null>(null);
   const [footerImage, setFooterImage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
 
   // Add user data state to store header/footer images
   const userData = useSelector((state: RootState) => state.account.userData);
@@ -676,25 +677,27 @@ export default function TemplateEditor() {
         {/* Preview Section */}
         <View style={styles.previewContainer}>
           <View style={styles.previewImageContainer}>
-            {generatingImage ? (
+            <Image
+              source={{ 
+                uri: generatedImage || currentTemplate.url || 'https://via.placeholder.com/300x500' 
+              }}
+              style={styles.previewImage}
+              resizeMode="contain"
+              onLoadStart={() => setImageLoading(true)}
+              onLoad={() => setImageLoading(false)}
+              onError={() => setImageLoading(false)}
+            />
+            
+            {/* Loader overlay */}
+            {(imageLoading || generatingImage) && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#8B3DFF" />
-                <ThemedText style={styles.loadingText}>Generating image...</ThemedText>
+                <ThemedText style={styles.loadingText}>
+                  {generatingImage ? 'Generating image...' : 'Loading image...'}
+                </ThemedText>
               </View>
-            ) : generatedImage ? (
-              <Image
-                source={{ uri: generatedImage }}
-                style={styles.previewImage}
-                resizeMode="contain"
-              />
-            ) : (
-              <Image
-                source={{ uri: currentTemplate.url || 'https://via.placeholder.com/300x500' }}
-                style={styles.previewImage}
-                resizeMode="contain"
-              />
             )}
-            
+
             {generateImageError && (
               <View style={styles.errorContainer}>
                 <ThemedText style={styles.errorText}>{generateImageError}</ThemedText>
@@ -951,6 +954,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f7fa',
   },
   previewImage: {
     width: '100%',
@@ -1044,7 +1048,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 16,
     color: '#666',
   },
@@ -1073,7 +1077,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     zIndex: 5,
   },
   errorContainer: {
