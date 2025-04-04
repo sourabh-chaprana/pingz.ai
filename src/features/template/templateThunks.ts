@@ -176,19 +176,7 @@ export const fetchMediaLibrary = () => {
     try {
       dispatch(fetchMediaStart());
       
-      const token = await AsyncStorage.getItem(TOKEN_KEY);
-      
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-      
-      const response = await axios({
-        method: 'get',
-        url: 'https://pingz.ai/api/template/api/media',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/template/api/media');
       
       dispatch(fetchMediaSuccess(response.data));
       return response.data;
