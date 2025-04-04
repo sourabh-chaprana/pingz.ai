@@ -110,20 +110,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query }) => {
                 style={styles.resultCard}
                 onPress={() => handleTemplatePress(template.id)}
               >
-                <Image
-                  source={{ uri: template.url }}
-                  style={styles.resultImage}
-                  resizeMode="cover"
-                />
-                <View style={styles.resultInfo}>
-                  <ThemedText style={styles.resultTitle}>
-                    {template.templateName}
-                  </ThemedText>
-                  <ThemedText style={styles.resultAuthor}>
-                    <ThemedText style={styles.authorHighlight}>
-                      {template.event || "holidays"}
-                    </ThemedText>
-                  </ThemedText>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{ uri: template.url }}
+                    style={styles.resultImage}
+                    resizeMode="contain"
+                  />
+                  {template.premium && (
+                    <View style={styles.proTag}>
+                      <ThemedText style={styles.proText}>Pro</ThemedText>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             ))}
@@ -162,52 +159,39 @@ const styles = StyleSheet.create({
   resultCard: {
     width: CARD_WIDTH,
     marginBottom: 16,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#fff",
-    shadowColor: "#000",
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 8,
+    position: 'relative',
   },
   resultImage: {
-    width: "100%",
-    height: CARD_WIDTH * 1.3,
-    backgroundColor: "#f5f5f5",
-  },
-  resultInfo: {
-    padding: 12,
-  },
-  resultTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-    marginBottom: 4,
-  },
-  resultAuthor: {
-    fontSize: 12,
-    color: "#666",
-  },
-  authorHighlight: {
-    color: "#8B3DFF",
+    width: '100%',
+    height: '100%',
   },
   proTag: {
-    position: "absolute",
-    bottom: 60,
+    position: 'absolute',
+    top: 8,
     right: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFD700",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
   },
   proText: {
     fontSize: 10,
-    fontWeight: "bold",
-    color: "#333",
-    marginLeft: 2,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   noResultsContainer: {
     flex: 1,

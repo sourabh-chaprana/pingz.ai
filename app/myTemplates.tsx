@@ -66,24 +66,18 @@ export default function MyTemplates() {
       style={[styles.card, { width: cardWidth }]}
       onPress={() => handleTemplatePress(item.id)}
     >
-      <Image
-        source={{ uri: item.url }}
-        style={styles.image}
-        resizeMode="cover"
-      />
-      <View style={styles.cardContent}>
-        <ThemedText style={styles.templateName} numberOfLines={1}>
-          {toCamelCase(item.templateName)}
-        </ThemedText>
-        <ThemedText style={styles.event} numberOfLines={1}>
-          {toCamelCase(item.event)}
-        </ThemedText>
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: item.url }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+        {item.premium && (
+          <View style={styles.premiumBadge}>
+            <ThemedText style={styles.premiumText}>Pro</ThemedText>
+          </View>
+        )}
       </View>
-      {item.premium && (
-        <View style={styles.premiumBadge}>
-          <ThemedText style={styles.premiumText}>Premium</ThemedText>
-        </View>
-      )}
     </TouchableOpacity>
   );
 
@@ -136,53 +130,39 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     marginHorizontal: 8,
     marginBottom: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 8,
+    position: 'relative',
   },
   image: {
     width: '100%',
-    aspectRatio: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  cardContent: {
-    padding: 12,
-  },
-  templateName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    lineHeight: 20,
-  },
-  event: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 18,
+    height: '100%',
   },
   premiumBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#FFD700',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 4,
   },
   premiumText: {
-    fontSize: 12,
-    color: '#000',
+    fontSize: 10,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   footer: {
