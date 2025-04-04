@@ -75,18 +75,13 @@ export default function TemplateCategories() {
         <Image 
           source={{ uri: item.url || 'https://via.placeholder.com/150' }} 
           style={styles.templateImage}
-          resizeMode="cover"
+          resizeMode="contain"
         />
         {item.premium && (
           <View style={styles.premiumBadge}>
-            <ThemedText style={styles.premiumText}>Premium</ThemedText>
+            <ThemedText style={styles.premiumText}>Pro</ThemedText>
           </View>
         )}
-      </View>
-      <View style={styles.templateContent}>
-        <ThemedText style={styles.templateTitle}>
-          {toCamelCase(item.templateName)}
-        </ThemedText>
       </View>
     </TouchableOpacity>
   );
@@ -188,53 +183,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   templateGrid: {
-    padding: 8,
+    padding: 12,
   },
   row: {
     flex: 1,
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   templateCard: {
     width: '48%',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 6,
+    marginBottom: 4,
   },
   templateImageContainer: {
     width: '100%',
     aspectRatio: 1,
     position: 'relative',
+    backgroundColor: '#f5f5f5',
+    padding: 8,
   },
   templateImage: {
     width: '100%',
     height: '100%',
   },
-  templateContent: {
-    padding: 12,
-  },
-  templateTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
   premiumBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: '#FFB800',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
   },
   premiumText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   loadingText: {
