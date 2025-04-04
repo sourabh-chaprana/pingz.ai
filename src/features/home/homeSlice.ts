@@ -45,7 +45,7 @@ interface HomeState {
   error: string | null;
   recentError: string | null;
   pagination: PaginationInfo;
-  whatsNewTags: string[];
+  whatsNewTags: { id: string; label: string; tags: string[] }[];
   whatsNewTemplates: { [key: string]: Template[] };
   whatsNewLoading: boolean;
   whatsNewError: string | null;

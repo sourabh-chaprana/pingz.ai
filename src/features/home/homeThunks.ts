@@ -43,15 +43,15 @@ export const fetchRecentTemplates = createAsyncThunk<
   }
 });
 
-// Add new thunks for what's new section
+// Update the fetchWhatsNewTags thunk to use the new active endpoint
 export const fetchWhatsNewTags = createAsyncThunk<
-  string[],
+  { id: string; label: string; tags: string[] }[],
   void,
   { rejectValue: string }
 >("home/fetchWhatsNewTags", async (_, { rejectWithValue }) => {
   try {
     const token = await AsyncStorage.getItem('token');
-    const response = await api.get('/template/whats-new', {
+    const response = await api.get('/template/whats-new/active', {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -60,6 +60,7 @@ export const fetchWhatsNewTags = createAsyncThunk<
   }
 });
 
+// Updated to accept multiple tags as a string
 export const fetchTemplatesByTag = createAsyncThunk<
   Template[],
   string,

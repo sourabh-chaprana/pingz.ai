@@ -119,13 +119,16 @@ const toCamelCase = (str: string) => {
   return withSpaces;
 };
 
+// Updated WhatsNewCard component to display tag group image and label
 function WhatsNewCard({
-  title,
-  imageUrl,
+  label,
+  webp,
+  tags,
   onPress,
 }: {
-  title: string;
-  imageUrl: string;
+  label: string;
+  webp: string;
+  tags: string[];
   onPress: () => void;
 }) {
   return (
@@ -133,14 +136,15 @@ function WhatsNewCard({
       style={styles.whatsNewCard}
       onPress={onPress}
     >
+      {/* Display the webp image from base64 */}
       <Image
-        source={{ uri: imageUrl }}
+        source={{ uri: `data:image/webp;base64,${webp}` }}
         style={styles.whatsNewImage}
         resizeMode="cover"
       />
       <View style={styles.whatsNewOverlay}>
         <ThemedText style={styles.whatsNewTitle}>
-          {toCamelCase(title)}
+          {toCamelCase(label)}
         </ThemedText>
       </View>
     </TouchableOpacity>
@@ -464,25 +468,39 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchWhatsNew = async () => {
       const result = await dispatch(fetchWhatsNewTags());
-      if (fetchWhatsNewTags.fulfilled.match(result)) {
-        // Fetch templates for each tag
-        result.payload.forEach(tag => {
-          dispatch(fetchTemplatesByTag(tag));
-        });
-      }
+      // Don't pre-fetch the templates, just get the tag groups
+      // We'll call search API only when user clicks on an image
     };
 
     fetchWhatsNew();
   }, [dispatch]);
 
+  // Function to handle What's New tag group click - call search API here
+  const handleWhatsNewTagClick = (tagGroup: { id: string; label: string; tags: string[] }) => {
+    // Construct the query string from tags
+    const queryString = tagGroup.tags.join('&');
+    
+    // Navigate to activeTemplate page with the query string
+    router.push({
+      pathname: '/activeTemplate',
+      params: { 
+        query: queryString,
+        label: tagGroup.label 
+      }
+    });
+  };
+
   // Prepare what's new data for display
-  const whatsNewItems = whatsNewTags.flatMap(tag => 
-    (whatsNewTemplates[tag] || []).map(template => ({
-      id: template.id,
-      title: template.templateName,
-      imageUrl: template.url,
-      description: template.description
-    }))
+  // Flatten all tag groups' templates and combine them for display
+  const whatsNewItems = whatsNewTags.flatMap(tagGroup => 
+    tagGroup.tags.flatMap(tag => 
+      (whatsNewTemplates[tag] || []).map(template => ({
+        id: template.id,
+        title: template.templateName,
+        imageUrl: template.url,
+        description: template.description
+      }))
+    )
   );
 
   // Add console logs to debug
@@ -575,7 +593,7 @@ export default function HomeScreen() {
             <ActivityIndicator size="large" color="#8B3DFF" />
           ) : whatsNewError ? (
             <ThemedText style={styles.errorText}>{whatsNewError}</ThemedText>
-          ) : whatsNewItems.length === 0 ? (
+          ) : whatsNewTags.length === 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -596,21 +614,22 @@ export default function HomeScreen() {
                   const scrollX = event.nativeEvent.contentOffset.x;
                   const itemWidth = 182; // card width (170) + margin (12)
                   const currentIndex = Math.round(scrollX / itemWidth);
-                  setCurrentWhatsNewIndex(currentIndex);
+                  setCurrentWhatsNewIndex(currentIndex < whatsNewTags.length ? currentIndex : 0);
                 }}
                 scrollEventThrottle={16}
               >
-                {whatsNewItems.map((item, index) => (
+                {whatsNewTags.map((tagGroup, index) => (
                   <WhatsNewCard
-                    key={`${item.id}-${index}`}
-                    title={item.title}
-                    imageUrl={item.imageUrl}
-                    onPress={() => router.push(`/template-editor/${item.id}`)}
+                    key={`${tagGroup.id}-${index}`}
+                    label={tagGroup.label}
+                    webp={tagGroup.webp}
+                    tags={tagGroup.tags}
+                    onPress={() => handleWhatsNewTagClick(tagGroup)}
                   />
                 ))}
               </ScrollView>
               <View style={styles.paginationDots}>
-                {whatsNewItems.map((_, index) => (
+                {whatsNewTags.map((_, index) => (
                   <View
                     key={index}
                     style={[
