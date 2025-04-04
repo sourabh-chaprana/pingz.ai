@@ -588,7 +588,13 @@ export default function HomeScreen() {
 
         {/* What's new section */}
         <View style={styles.sectionContainer}>
-          <ThemedText style={styles.sectionTitle}>What's new</ThemedText>
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.sectionTitle}>What's new</ThemedText>
+            <TouchableOpacity onPress={() => router.push("/whatsNew")}>
+              <ThemedText style={styles.seeAll}>See all</ThemedText>
+            </TouchableOpacity>
+          </View>
+          
           {whatsNewLoading ? (
             <ActivityIndicator size="large" color="#8B3DFF" />
           ) : whatsNewError ? (
