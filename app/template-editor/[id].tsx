@@ -86,44 +86,47 @@ export default function TemplateEditor() {
 
   // Add user data state to store header/footer images
   const userData = useSelector((state: RootState) => state.account.userData);
-  console.log('userData----', userData);
 
   // Add this to track where we came from
   const category = currentTemplate?.category || params.category;
 
-  // Initial data fetching
+  // Single useEffect for initial data fetching
   useEffect(() => {
-    dispatch(fetchTemplateById(templateId));
-    dispatch(fetchUserData());
-    if (currentTemplate?.event) {
-      dispatch(fetchTemplatesByCategory(currentTemplate.event));
-    }
-  }, [templateId, dispatch]);
-  
-  // Reset form when template changes
+    const fetchInitialData = async () => {
+      try {
+        await Promise.all([
+          dispatch(fetchTemplateById(templateId)),
+          dispatch(fetchUserData())
+        ]);
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+      }
+    };
+
+    fetchInitialData();
+  }, [templateId]); // Only depend on templateId
+
+  // Separate useEffect for template variables reset
   useEffect(() => {
-    if (currentTemplate && currentTemplate.templateVariables) {
+    if (currentTemplate?.templateVariables) {
       resetForm();
     }
-  }, [currentTemplate]);
+  }, [currentTemplate?.id]); // Only reset when template ID changes
 
-  // Reset when navigating back
+  // Separate useEffect for header/footer images
   useEffect(() => {
-    if (clearGeneratedImage) {
-      dispatch(clearGeneratedImage());
-    }
-    resetForm();
-    dispatch(fetchTemplateById(templateId));
-  }, [templateId]);
-
-  // Initialize header/footer images from user data with the correct property names
-  useEffect(() => {
-    if (userData) {
-      // Use the correct property names from userData
+    if (userData?.header || userData?.footer) {
       setHeaderImage(userData.header || null);
       setFooterImage(userData.footer || null);
     }
-  }, [userData]);
+  }, [userData?.header, userData?.footer]); // Only update when header/footer changes
+
+  // Separate useEffect for category templates
+  useEffect(() => {
+    if (currentTemplate?.event && !templates.length) {
+      dispatch(fetchTemplatesByCategory(currentTemplate.event));
+    }
+  }, [currentTemplate?.event]); // Only fetch when event changes and templates are empty
 
   // Media handlers
   const handleSelectMedia = () => {
@@ -668,7 +671,8 @@ export default function TemplateEditor() {
           <Ionicons name="arrow-back" size={24} color="#8B3DFF" />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>
-          {toCamelCase(currentTemplate?.templateName || category || '')}
+     
+          {toCamelCase(currentTemplate?.event || category || 'category')}
         </ThemedText>
       </View>
       
