@@ -128,6 +128,24 @@ export default function TemplateEditor() {
     }
   }, [currentTemplate?.event]); // Only fetch when event changes and templates are empty
 
+  // Add new useEffect to clear state when template ID changes
+  useEffect(() => {
+    // Clear all relevant states when template changes
+    dispatch(clearGeneratedImage());
+    setSelectedImage(null);
+    setTemplateVariables({});
+    setAddHeader(false);
+    setAddFooter(false);
+    setImageLoading(true);
+    setShowDownloadSuccess(false);
+    setShowPermissionError(false);
+    
+    // Reset any error states
+    if (generateImageError) {
+      dispatch(generateImageFailure(null));
+    }
+  }, [templateId]); // Only run when templateId changes
+
   // Media handlers
   const handleSelectMedia = () => {
     setIsMediaLibraryOpen(true);
@@ -139,8 +157,12 @@ export default function TemplateEditor() {
   };
 
   const handleImageSelect = (imageUrl: string) => {
+    // Clear any previous errors first
+    if (generateImageError) {
+      dispatch(generateImageFailure(null));
+    }
+    
     setSelectedImage(imageUrl);
-    // Make sure to include any position data from the template variable
     const imageVariable = currentTemplate?.templateVariables.find(
       variable => variable.name.toLowerCase() === 'image'
     );
@@ -274,9 +296,29 @@ export default function TemplateEditor() {
     );
   };
 
-  // Modify the handleGenerateImage function to include header/footer
+  // Modify the handleGenerateImage function
   const handleGenerateImage = () => {
     if (!currentTemplate) return;
+    
+    // Clear any previous errors and generated images
+    dispatch(clearGeneratedImage());
+    dispatch(generateImageFailure(null));
+    
+    // Check if template has any variables that need to be filled
+    const hasRequiredVariables = currentTemplate.templateVariables.some(variable => {
+      // Check if the variable is required (you may need to add this field in your template model)
+      return variable.required && !templateVariables[variable.name];
+    });
+
+    if (hasRequiredVariables) {
+      Toast.show({
+        type: 'warning',
+        text1: 'Missing Information',
+        text2: 'Please fill in all required fields',
+        position: 'bottom',
+      });
+      return;
+    }
     
     // Create the payload with the proper structure
     const payload = {
@@ -285,7 +327,7 @@ export default function TemplateEditor() {
       textOverlays: currentTemplate.templateVariables
         .filter(variable => variable.name.toLowerCase() !== 'image')
         .map(variable => ({
-          text: templateVariables[variable.name] || "",
+          text: templateVariables[variable.name] || "", // Empty string if no value
           width: parseInt(variable.posWidth) || 300,
           height: parseInt(variable.posHeight) || 150,
           x: parseInt(variable.x) || 0,
@@ -334,11 +376,14 @@ export default function TemplateEditor() {
   };
 
   const handleDownload = async () => {
-    if (!generatedImage) {
+    // If there's no generated image, use the template's original image
+    const imageToDownload = generatedImage || currentTemplate?.url;
+    
+    if (!imageToDownload) {
       Toast.show({
         type: 'error',
         text1: 'No Image',
-        text2: 'Please generate an image first',
+        text2: 'No image available to download',
         position: 'bottom',
       });
       return;
@@ -347,7 +392,7 @@ export default function TemplateEditor() {
     try {
       if (Platform.OS === 'web') {
         // Web download logic
-        const response = await fetch(generatedImage);
+        const response = await fetch(imageToDownload);
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
         
@@ -385,14 +430,14 @@ export default function TemplateEditor() {
         const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
         // Download or write the file
-        if (generatedImage.startsWith('data:')) {
-          const base64Data = generatedImage.split(',')[1];
+        if (imageToDownload.startsWith('data:')) {
+          const base64Data = imageToDownload.split(',')[1];
           await FileSystem.writeAsStringAsync(fileUri, base64Data, {
             encoding: FileSystem.EncodingType.Base64,
           });
         } else {
           const downloadResult = await FileSystem.downloadAsync(
-            generatedImage,
+            imageToDownload,
             fileUri
           );
 
@@ -437,14 +482,14 @@ export default function TemplateEditor() {
         const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
         // Download or write the file
-        if (generatedImage.startsWith('data:')) {
-          const base64Data = generatedImage.split(',')[1];
+        if (imageToDownload.startsWith('data:')) {
+          const base64Data = imageToDownload.split(',')[1];
           await FileSystem.writeAsStringAsync(fileUri, base64Data, {
             encoding: FileSystem.EncodingType.Base64,
           });
         } else {
           const downloadResult = await FileSystem.downloadAsync(
-            generatedImage,
+            imageToDownload,
             fileUri
           );
 
@@ -623,6 +668,18 @@ export default function TemplateEditor() {
     }
   }, []);
 
+  // Add image error handling
+  const handleImageError = () => {
+    setImageLoading(false);
+    // Optionally show an error message for failed image loads
+    Toast.show({
+      type: 'error',
+      text1: 'Image Load Error',
+      text2: 'Failed to load image. Please try again.',
+      position: 'bottom',
+    });
+  };
+
   // Loading and error states
   if (loading) {
     return (
@@ -683,16 +740,18 @@ export default function TemplateEditor() {
           <View style={styles.previewImageContainer}>
             <Image
               source={{ 
-                uri: generatedImage || currentTemplate.url || 'https://via.placeholder.com/300x500' 
+                uri: generatedImage || currentTemplate.url || 'https://via.placeholder.com/300x500',
+                // Add cache control
+                cache: 'reload'  // Force reload for web
               }}
               style={styles.previewImage}
               resizeMode="contain"
               onLoadStart={() => setImageLoading(true)}
               onLoad={() => setImageLoading(false)}
-              onError={() => setImageLoading(false)}
+              onError={handleImageError}
             />
             
-            {/* Loader overlay */}
+            {/* Only show loading overlay when actually loading */}
             {(imageLoading || generatingImage) && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#8B3DFF" />
@@ -702,7 +761,8 @@ export default function TemplateEditor() {
               </View>
             )}
 
-            {generateImageError && (
+            {/* Only show error if it's current */}
+            {generateImageError && !imageLoading && (
               <View style={styles.errorContainer}>
                 <ThemedText style={styles.errorText}>{generateImageError}</ThemedText>
               </View>
@@ -723,30 +783,30 @@ export default function TemplateEditor() {
               <TouchableOpacity 
                 style={[
                   styles.iconButton,
-                  !generatedImage && styles.iconButtonDisabled
+                  (!generatedImage && !currentTemplate?.url) && styles.iconButtonDisabled
                 ]} 
                 onPress={handleDownload}
-                disabled={!generatedImage}
+                disabled={!generatedImage && !currentTemplate?.url}
               >
                 <Ionicons 
                   name="download-outline" 
                   size={24} 
-                  color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
+                  color={(generatedImage || currentTemplate?.url) ? "#8B3DFF" : "#CCCCCC"} 
                 />
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={[
                   styles.iconButton,
-                  !generatedImage && styles.iconButtonDisabled
+                  (!generatedImage && !currentTemplate?.url) && styles.iconButtonDisabled
                 ]} 
                 onPress={handleShare}
-                disabled={!generatedImage}
+                disabled={!generatedImage && !currentTemplate?.url}
               >
                 <Ionicons 
                   name="share-social-outline" 
                   size={24} 
-                  color={generatedImage ? "#8B3DFF" : "#CCCCCC"} 
+                  color={(generatedImage || currentTemplate?.url) ? "#8B3DFF" : "#CCCCCC"} 
                 />
               </TouchableOpacity>
               
@@ -1057,10 +1117,10 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   errorText: {
-    marginTop: 16,
-    fontSize: 16,
     color: '#ff4444',
     textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '500',
   },
   retryButton: {
     marginTop: 16,
@@ -1092,7 +1152,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: 20,
   },
   imageFieldContainer: {
     minHeight: 120,
