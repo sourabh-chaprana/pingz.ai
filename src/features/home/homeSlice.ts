@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { fetchTemplates, fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag } from "./homeThunks";
+import { fetchTemplates, fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchPharmacyTemplates } from "./homeThunks";
 
 export interface Template {
   id: string;
@@ -40,10 +40,13 @@ interface PaginationInfo {
 interface HomeState {
   templates: Template[];
   recentTemplates: Template[];
+  pharmacyTemplates: Template[];
   loading: boolean;
   recentLoading: boolean;
+  pharmacyLoading: boolean;
   error: string | null;
   recentError: string | null;
+  pharmacyError: string | null;
   pagination: PaginationInfo;
   whatsNewTags: { id: string; label: string; tags: string[] }[];
   whatsNewTemplates: { [key: string]: Template[] };
@@ -54,10 +57,13 @@ interface HomeState {
 const initialState: HomeState = {
   templates: [],
   recentTemplates: [],
+  pharmacyTemplates: [],
   loading: false,
   recentLoading: false,
+  pharmacyLoading: false,
   error: null,
   recentError: null,
+  pharmacyError: null,
   pagination: {
     currentPage: 0,
     totalPages: 0,
@@ -78,6 +84,7 @@ export const homeSlice = createSlice({
     clearHomeErrors: (state) => {
       state.error = null;
       state.recentError = null;
+      state.pharmacyError = null;
     },
     resetTemplates: (state) => {
       state.templates = [];
@@ -166,6 +173,21 @@ export const homeSlice = createSlice({
       .addCase(fetchTemplatesByTag.fulfilled, (state, action) => {
         const tag = action.meta.arg;
         state.whatsNewTemplates[tag] = action.payload;
+      })
+      .addCase(fetchPharmacyTemplates.pending, (state) => {
+        state.pharmacyLoading = true;
+        state.pharmacyError = null;
+      })
+      .addCase(
+        fetchPharmacyTemplates.fulfilled,
+        (state, action: PayloadAction<Template[]>) => {
+          state.pharmacyLoading = false;
+          state.pharmacyTemplates = action.payload;
+        }
+      )
+      .addCase(fetchPharmacyTemplates.rejected, (state, action) => {
+        state.pharmacyLoading = false;
+        state.pharmacyError = action.payload as string || "Failed to fetch pharmacy templates";
       });
   },
 });

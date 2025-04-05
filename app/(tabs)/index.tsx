@@ -21,7 +21,7 @@ import {
   fetchTemplatesByCategory,
   fetchCategories,
 } from "@/src/features/template/templateThunks";
-import { fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag } from "@/src/features/home/homeThunks";
+import { fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchPharmacyTemplates } from "@/src/features/home/homeThunks";
 import { RootState } from "@/src/store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -395,15 +395,15 @@ function RecentDesignCard({
   );
 }
 
-// Update the ComingSoonCard component
-function ComingSoonCard() {
+// First, let's update the ComingSoonCard component to support custom messages
+function ComingSoonCard({ title = "Coming Soon!", text = "New templates are on the way" }) {
   return (
     <View style={styles.comingSoonCard}>
       <View style={styles.comingSoonContent}>
         <Ionicons name="time-outline" size={32} color="#8B3DFF" />
-        <ThemedText style={styles.comingSoonTitle}>Coming Soon!</ThemedText>
+        <ThemedText style={styles.comingSoonTitle}>{title}</ThemedText>
         <ThemedText style={styles.comingSoonText}>
-          New templates are on the way
+          {text}
         </ThemedText>
       </View>
     </View>
@@ -510,6 +510,8 @@ export default function HomeScreen() {
       // Fetch categories and recent templates
       dispatch(fetchCategories());
       dispatch(fetchRecentTemplates());
+      dispatch(fetchWhatsNewTags());
+      dispatch(fetchPharmacyTemplates());
     }
   }, [isAuthenticated, dispatch]);
 
@@ -519,6 +521,12 @@ export default function HomeScreen() {
     loadingRecentTemplates,
     recentTemplatesError
   });
+
+  const {
+    pharmacyTemplates,
+    loading: pharmacyLoading,
+    error: pharmacyError,
+  } = useSelector((state: RootState) => state.home);
 
   return (
     <ThemedView style={styles.container}>
@@ -652,7 +660,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Recent designs section - now using API data */}
+        {/* Recent designs section */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recent designs</ThemedText>
@@ -672,9 +680,17 @@ export default function HomeScreen() {
               {recentTemplatesError}
             </ThemedText>
           ) : recentTemplates.length === 0 ? (
-            <ThemedText style={styles.noDataText}>
-              No recent designs found
-            </ThemedText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.recentDesignsScroll}
+              contentContainerStyle={styles.recentDesignsScrollContent}
+            >
+              <ComingSoonCard 
+                title="No Recent Templates" 
+                text="You haven't created any templates yet" 
+              />
+            </ScrollView>
           ) : (
             <>
               <ScrollView
@@ -716,6 +732,72 @@ export default function HomeScreen() {
                   />
                 ))}
               </View>
+            </>
+          )}
+        </View>
+
+        {/* Pharmacies section - positioned after Recent designs section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.sectionTitle}>Pharmacies template</ThemedText>
+            <TouchableOpacity onPress={() => router.push("/activeTemplate?event=Pharmacies")}>
+              <ThemedText style={styles.seeAll}>See all</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          {pharmacyLoading ? (
+            <ActivityIndicator
+              size="large"
+              color="#8B3DFF"
+              style={{ marginTop: 10 }}
+            />
+          ) : pharmacyError ? (
+            <ThemedText style={styles.errorText}>
+              {pharmacyError}
+            </ThemedText>
+          ) : pharmacyTemplates.length === 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.recentDesignsScroll}
+              contentContainerStyle={styles.recentDesignsScrollContent}
+            >
+              <ComingSoonCard />
+            </ScrollView>
+          ) : (
+            <>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.recentDesignsScroll}
+                contentContainerStyle={styles.recentDesignsScrollContent}
+                pagingEnabled
+              >
+                {pharmacyTemplates.slice(0, 5).map((template) => (
+                  <RecentDesignCard
+                    key={template.id}
+                    id={template.id}
+                    title={template.templateName}
+                    description={template.description || "Pharmacy Design"}
+                    imageUrl={template.url}
+                  />
+                ))}
+              </ScrollView>
+              {pharmacyTemplates.length > 0 && (
+                <View style={styles.paginationDots}>
+                  {pharmacyTemplates.slice(0, 5).map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: 0 === index ? "#8B3DFF" : "#D8D8D8",
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
             </>
           )}
         </View>

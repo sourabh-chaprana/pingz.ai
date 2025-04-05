@@ -76,3 +76,21 @@ export const fetchTemplatesByTag = createAsyncThunk<
     return rejectWithValue(error.response?.data?.message || "Failed to fetch templates by tag");
   }
 });
+
+// Fetch pharmacy templates
+export const fetchPharmacyTemplates = createAsyncThunk<
+  Template[],
+  void,
+  { rejectValue: string; state: RootState }
+>("home/fetchPharmacyTemplates", async (_, { rejectWithValue }) => {
+  try {
+    const response = await api.get('/template/event/Pharmacies');
+    console.log('Pharmacy API response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Pharmacy API error:', error);
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch pharmacy templates"
+    );
+  }
+});

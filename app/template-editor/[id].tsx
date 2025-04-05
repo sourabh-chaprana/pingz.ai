@@ -715,12 +715,29 @@ export default function TemplateEditor() {
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => {
-            if (category) {
+            // Check if we have a query parameter that indicates we came from search results
+            const searchQuery = params.searchQuery || params.query;
+            const searchLabel = params.label;
+            
+            if (searchQuery) {
+              // If we have search parameters, go back to activeTemplate with those parameters
+              router.push({
+                pathname: '/activeTemplate',
+                params: { 
+                  query: searchQuery,
+                  label: searchLabel || searchQuery
+                }
+              });
+            }
+            // Otherwise use the existing category logic
+            else if (category) {
               router.replace({
                 pathname: '/templateCategories',
                 params: { category }
               });
-            } else {
+            } 
+            // Default fallback
+            else {
               router.back();
             }
           }}

@@ -58,7 +58,13 @@ export default function ActiveTemplatePage() {
   const renderTemplateItem = ({ item }: { item: Template }) => (
     <TouchableOpacity
       style={styles.templateCard}
-      onPress={() => router.push(`/template-editor/${item.id}`)}
+      onPress={() => router.push({
+        pathname: `/template-editor/${item.id}`,
+        params: {
+          searchQuery: query,
+          label: label
+        }
+      })}
     >
       <Image
         source={{ uri: item.url }}
