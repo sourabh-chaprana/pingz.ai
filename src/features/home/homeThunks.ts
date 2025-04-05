@@ -77,20 +77,20 @@ export const fetchTemplatesByTag = createAsyncThunk<
   }
 });
 
-// Fetch pharmacy templates
-export const fetchPharmacyTemplates = createAsyncThunk<
+// Fetch holiday templates instead of pharmacy templates
+export const fetchHolidayTemplates = createAsyncThunk<
   Template[],
   void,
   { rejectValue: string; state: RootState }
->("home/fetchPharmacyTemplates", async (_, { rejectWithValue }) => {
+>("home/fetchHolidayTemplates", async (_, { rejectWithValue }) => {
   try {
-    const response = await api.get('/template/event/Pharmacies');
-    console.log('Pharmacy API response:', response.data);
+    const response = await api.get('/template/event/holidays');
+    console.log('Holiday API response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('Pharmacy API error:', error);
+    console.error('Holiday API error:', error);
     return rejectWithValue(
-      error.response?.data?.message || "Failed to fetch pharmacy templates"
+      error.response?.data?.message || "Failed to fetch holiday templates"
     );
   }
 });

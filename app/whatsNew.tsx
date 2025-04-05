@@ -98,7 +98,7 @@ export default function WhatsNewPage() {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        {/* Removed the header title */}
+        <ThemedText style={styles.headerTitle}>What's New</ThemedText>
       </View>
       
       {/* Content */}
@@ -146,6 +146,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   content: {
     padding: 16,

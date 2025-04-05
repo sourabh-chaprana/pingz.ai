@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, FlatList, Image, TouchableOpacity, ActivityIndicator, Dimensions, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, FlatList, Image, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTemplates } from '@/src/features/home/homeThunks';
-import { resetTemplates } from '@/src/features/home/homeSlice';
 import { RootState } from '@/src/store';
 import { Ionicons } from "@expo/vector-icons";
+import { api } from "@/src/services/api";
 
 interface Template {
   id: string;
@@ -17,45 +16,31 @@ interface Template {
   premium: boolean;
 }
 
-const toCamelCase = (str: string) => {
-  if (!str) return '';
-  
-  // Convert to camelCase and add spaces
-  const withSpaces = str
-    .split(/[-_\s]+/)
-    .map((word) => {
-      // Always capitalize first letter of each word
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(' ');
-  
-  return withSpaces;
-};
-
-export default function MyTemplates() {
+export default function HolidayTemplates() {
   const dispatch = useDispatch();
   const router = useRouter();
   const windowWidth = Dimensions.get('window').width;
   const numColumns = 2;
   const cardWidth = (windowWidth - 48) / numColumns; // 48 = padding + gap
-
-  const { templates, loading, pagination } = useSelector((state: RootState) => state.home);
-
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  
   useEffect(() => {
-    dispatch(resetTemplates());
-    loadTemplates();
+    fetchHolidayTemplates();
   }, []);
 
-  const loadTemplates = async () => {
-    // Don't fetch if already loading or no more pages
-    if (loading || pagination.isLoadingMore || !pagination.hasMore) return;
-
-    dispatch(
-      fetchTemplates({
-        page: pagination.currentPage,
-        size: 10,
-      })
-    );
+  const fetchHolidayTemplates = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/template/event/Holidays');
+      setTemplates(response.data);
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch holiday templates");
+      setLoading(false);
+    }
   };
 
   const handleTemplatePress = (templateId: string) => {
@@ -82,19 +67,29 @@ export default function MyTemplates() {
     </TouchableOpacity>
   );
 
-  const renderFooter = () => {
-    if (!pagination.isLoadingMore) return null;
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="large" color="#8B3DFF" />
-      </View>
-    );
-  };
-
-  if (loading && templates.length === 0) {
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8B3DFF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <ThemedText style={styles.headerTitle}>Holiday Templates</ThemedText>
+        </View>
+        <View style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        </View>
       </View>
     );
   }
@@ -108,18 +103,15 @@ export default function MyTemplates() {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>My Templates</ThemedText>
+        <ThemedText style={styles.headerTitle}>Holiday Templates</ThemedText>
       </View>
-      
+
       <FlatList
         data={templates}
         renderItem={renderTemplate}
         keyExtractor={item => item.id}
         numColumns={2}
         contentContainerStyle={[styles.listContainer, { paddingTop: 60, paddingBottom: 20 }]}
-        onEndReached={loadTemplates}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         windowSize={10}
@@ -135,21 +127,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 56,
+    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
+    borderBottomColor: '#f0f0f0',
+    zIndex: 1000,
   },
   backButton: {
     padding: 8,
+    marginRight: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 8,
   },
   listContainer: {
     padding: 16,
@@ -192,14 +189,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
-  footer: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
   },
-}); 
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 56, // To account for header height
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+});

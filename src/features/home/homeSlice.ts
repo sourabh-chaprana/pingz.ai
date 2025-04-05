@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { fetchTemplates, fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchPharmacyTemplates } from "./homeThunks";
+import { fetchTemplates, fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchHolidayTemplates } from "./homeThunks";
 
 export interface Template {
   id: string;
@@ -40,13 +40,13 @@ interface PaginationInfo {
 interface HomeState {
   templates: Template[];
   recentTemplates: Template[];
-  pharmacyTemplates: Template[];
+  holidayTemplates: Template[];
   loading: boolean;
   recentLoading: boolean;
-  pharmacyLoading: boolean;
+  holidayLoading: boolean;
   error: string | null;
   recentError: string | null;
-  pharmacyError: string | null;
+  holidayError: string | null;
   pagination: PaginationInfo;
   whatsNewTags: { id: string; label: string; tags: string[] }[];
   whatsNewTemplates: { [key: string]: Template[] };
@@ -57,13 +57,13 @@ interface HomeState {
 const initialState: HomeState = {
   templates: [],
   recentTemplates: [],
-  pharmacyTemplates: [],
+  holidayTemplates: [],
   loading: false,
   recentLoading: false,
-  pharmacyLoading: false,
+  holidayLoading: false,
   error: null,
   recentError: null,
-  pharmacyError: null,
+  holidayError: null,
   pagination: {
     currentPage: 0,
     totalPages: 0,
@@ -84,7 +84,7 @@ export const homeSlice = createSlice({
     clearHomeErrors: (state) => {
       state.error = null;
       state.recentError = null;
-      state.pharmacyError = null;
+      state.holidayError = null;
     },
     resetTemplates: (state) => {
       state.templates = [];
@@ -174,20 +174,20 @@ export const homeSlice = createSlice({
         const tag = action.meta.arg;
         state.whatsNewTemplates[tag] = action.payload;
       })
-      .addCase(fetchPharmacyTemplates.pending, (state) => {
-        state.pharmacyLoading = true;
-        state.pharmacyError = null;
+      .addCase(fetchHolidayTemplates.pending, (state) => {
+        state.holidayLoading = true;
+        state.holidayError = null;
       })
       .addCase(
-        fetchPharmacyTemplates.fulfilled,
+        fetchHolidayTemplates.fulfilled,
         (state, action: PayloadAction<Template[]>) => {
-          state.pharmacyLoading = false;
-          state.pharmacyTemplates = action.payload;
+          state.holidayLoading = false;
+          state.holidayTemplates = action.payload;
         }
       )
-      .addCase(fetchPharmacyTemplates.rejected, (state, action) => {
-        state.pharmacyLoading = false;
-        state.pharmacyError = action.payload as string || "Failed to fetch pharmacy templates";
+      .addCase(fetchHolidayTemplates.rejected, (state, action) => {
+        state.holidayLoading = false;
+        state.holidayError = action.payload as string || "Failed to fetch holiday templates";
       });
   },
 });

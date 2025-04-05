@@ -21,7 +21,7 @@ import {
   fetchTemplatesByCategory,
   fetchCategories,
 } from "@/src/features/template/templateThunks";
-import { fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchPharmacyTemplates } from "@/src/features/home/homeThunks";
+import { fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchHolidayTemplates } from "@/src/features/home/homeThunks";
 import { RootState } from "@/src/store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -511,7 +511,7 @@ export default function HomeScreen() {
       dispatch(fetchCategories());
       dispatch(fetchRecentTemplates());
       dispatch(fetchWhatsNewTags());
-      dispatch(fetchPharmacyTemplates());
+      dispatch(fetchHolidayTemplates());
     }
   }, [isAuthenticated, dispatch]);
 
@@ -523,9 +523,9 @@ export default function HomeScreen() {
   });
 
   const {
-    pharmacyTemplates,
-    loading: pharmacyLoading,
-    error: pharmacyError,
+    holidayTemplates,
+    loading: holidayLoading,
+    error: holidayError,
   } = useSelector((state: RootState) => state.home);
 
   return (
@@ -740,28 +740,28 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Pharmacies section - positioned after Recent designs section */}
+        {/* Holidays section - positioned after Recent designs section */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Pharmacies template</ThemedText>
-            {pharmacyTemplates.length > 0 && (
-              <TouchableOpacity onPress={() => router.push("/activeTemplate?event=Pharmacies")}>
+            <ThemedText style={styles.sectionTitle}>Holidays template</ThemedText>
+            {holidayTemplates.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/holiday")}>
                 <ThemedText style={styles.seeAll}>See all</ThemedText>
               </TouchableOpacity>
             )}
           </View>
 
-          {pharmacyLoading ? (
+          {holidayLoading ? (
             <ActivityIndicator
               size="large"
               color="#8B3DFF"
               style={{ marginTop: 10 }}
             />
-          ) : pharmacyError ? (
+          ) : holidayError ? (
             <ThemedText style={styles.errorText}>
-              {pharmacyError}
+              {holidayError}
             </ThemedText>
-          ) : pharmacyTemplates.length === 0 ? (
+          ) : holidayTemplates.length === 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -779,19 +779,19 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.recentDesignsScrollContent}
                 pagingEnabled
               >
-                {pharmacyTemplates.slice(0, 5).map((template) => (
+                {holidayTemplates.slice(0, 5).map((template) => (
                   <RecentDesignCard
                     key={template.id}
                     id={template.id}
                     title={template.templateName}
-                    description={template.description || "Pharmacy Design"}
+                    description={template.description || "Holiday Design"}
                     imageUrl={template.url}
                   />
                 ))}
               </ScrollView>
-              {pharmacyTemplates.length > 0 && (
+              {holidayTemplates.length > 0 && (
                 <View style={styles.paginationDots}>
-                  {pharmacyTemplates.slice(0, 5).map((_, index) => (
+                  {holidayTemplates.slice(0, 5).map((_, index) => (
                     <View
                       key={index}
                       style={[
