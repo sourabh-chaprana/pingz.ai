@@ -80,7 +80,7 @@ export default function ActiveTemplatePage() {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>
-          Results ({templates.length})
+          {label || query || 'Results'}
         </ThemedText>
       </View>
 
