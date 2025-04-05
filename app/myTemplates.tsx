@@ -59,7 +59,10 @@ export default function MyTemplates() {
   };
 
   const handleTemplatePress = (templateId: string) => {
-    router.push(`/template-editor/${templateId}`);
+    router.push({
+      pathname: `/template-editor/${templateId}`,
+      params: { source: 'myTemplates' }
+    });
   };
 
   const renderTemplate = ({ item }: { item: Template }) => (

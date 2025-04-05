@@ -715,11 +715,26 @@ export default function TemplateEditor() {
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => {
-            // Check if we have a query parameter that indicates we came from search results
+            // First check if we have a source parameter that indicates where we came from
+            const source = params.source;
+            
+            // Check if we have search query parameters
             const searchQuery = params.searchQuery || params.query;
             const searchLabel = params.label;
             
-            if (searchQuery) {
+            if (source === 'holiday') {
+              // If we came from the holiday page, go back there
+              router.push('/holiday');
+            }
+            else if (source === 'myTemplates') {
+              // If we came from my templates page
+              router.push('/myTemplates');
+            }
+            else if (source === 'whatsNew') {
+              // If we came from what's new page
+              router.push('/whatsNew');
+            }
+            else if (searchQuery) {
               // If we have search parameters, go back to activeTemplate with those parameters
               router.push({
                 pathname: '/activeTemplate',
@@ -745,7 +760,6 @@ export default function TemplateEditor() {
           <Ionicons name="arrow-back" size={24} color="#8B3DFF" />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>
-     
           {toCamelCase(currentTemplate?.event || category || 'category')}
         </ThemedText>
       </View>

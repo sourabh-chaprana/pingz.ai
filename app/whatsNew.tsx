@@ -78,12 +78,13 @@ export default function WhatsNewPage() {
     // Construct the query string from tags
     const queryString = tagGroup.tags.join('&');
     
-    // Navigate to activeTemplate page with the query string
+    // Navigate to activeTemplate with the query string and source parameter
     router.push({
       pathname: '/activeTemplate',
       params: { 
         query: queryString,
-        label: tagGroup.label 
+        label: tagGroup.label,
+        source: 'whatsNew'  // Add source parameter
       }
     });
   };

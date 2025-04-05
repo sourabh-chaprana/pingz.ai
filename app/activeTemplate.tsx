@@ -62,7 +62,8 @@ export default function ActiveTemplatePage() {
         pathname: `/template-editor/${item.id}`,
         params: {
           searchQuery: query,
-          label: label
+          label: label,
+          source: params.source || 'activeTemplate'
         }
       })}
     >

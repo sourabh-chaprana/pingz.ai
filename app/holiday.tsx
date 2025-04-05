@@ -44,7 +44,10 @@ export default function HolidayTemplates() {
   };
 
   const handleTemplatePress = (templateId: string) => {
-    router.push(`/template-editor/${templateId}`);
+    router.push({
+      pathname: `/template-editor/${templateId}`,
+      params: { source: 'holiday' }
+    });
   };
 
   const renderTemplate = ({ item }: { item: Template }) => (
