@@ -598,9 +598,11 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>What's new</ThemedText>
-            <TouchableOpacity onPress={() => router.push("/whatsNew")}>
-              <ThemedText style={styles.seeAll}>See all</ThemedText>
-            </TouchableOpacity>
+            {whatsNewTags.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/whatsNew")}>
+                <ThemedText style={styles.seeAll}>See all</ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
           
           {whatsNewLoading ? (
@@ -664,9 +666,11 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recent designs</ThemedText>
-            <TouchableOpacity onPress={() => router.push("/myTemplates")}>
-              <ThemedText style={styles.seeAll}>See all</ThemedText>
-            </TouchableOpacity>
+            {recentTemplates.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/myTemplates")}>
+                <ThemedText style={styles.seeAll}>See all</ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
 
           {loadingRecentTemplates ? (
@@ -740,9 +744,11 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Pharmacies template</ThemedText>
-            <TouchableOpacity onPress={() => router.push("/activeTemplate?event=Pharmacies")}>
-              <ThemedText style={styles.seeAll}>See all</ThemedText>
-            </TouchableOpacity>
+            {pharmacyTemplates.length > 0 && (
+              <TouchableOpacity onPress={() => router.push("/activeTemplate?event=Pharmacies")}>
+                <ThemedText style={styles.seeAll}>See all</ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
 
           {pharmacyLoading ? (
