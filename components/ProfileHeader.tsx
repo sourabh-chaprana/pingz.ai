@@ -1,57 +1,65 @@
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchUserData } from '@/src/features/accounts/accountsThunk';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AppDispatch, RootState } from '@/src/store';
 
 export function ProfileHeader() {
-  // const dispatch = useDispatch<AppDispatch>();
-  // const [updateData, setUpdateData] = useState('');
+  const dispatch = useDispatch<AppDispatch>();
   
-  // const { userData, loading, error } = useSelector(
-  //   (state: RootState) => state.account
-  // );
+  const { userData, loading } = useSelector(
+    (state: RootState) => state.account
+  );
 
-  // useEffect(() => {
-  //   dispatch(fetchUserData())
-  //     .then((result) => {
-  //       console.log('Fetch result:', result);
-  //     })
-  //     .catch((err) => {
-  //       console.error('Error fetching user data:', err);
-  //     });
-  // }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchUserData());
+  }, [dispatch]);
 
-  // useEffect(() => {
-  //   if (userData) {
-  //     console.log('User data:', userData);
-  //     setUpdateData(JSON.stringify(userData));
-  //   }
-  // }, [userData]);
+  // Display loading state while fetching data
+  if (loading && !userData) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="small" color="#8B3DFF" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.profileSection}>
-        <Image
-          source={{ 
-            uri: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&h=200&fit=crop' 
-          }}
-          style={styles.profileImage}
-        />
+        {userData?.profileImage ? (
+          <Image
+            source={{ uri: userData.profileImage }}
+            style={styles.profileImage}
+          />
+        ) : (
+          <View style={styles.profilePlaceholder}>
+            <Ionicons name="person" size={24} color="#8B3DFF" />
+          </View>
+        )}
         <View style={styles.profileInfo}>
-          <ThemedText style={styles.name}>sourabh</ThemedText>
-          <ThemedText style={styles.subtitle}>Personal</ThemedText>
+          <ThemedText style={styles.name}>
+            {userData?.firstName} {userData?.lastName || ''}
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>{userData?.email || ''}</ThemedText>
         </View>
         <TouchableOpacity>
           <Ionicons name="chevron-down" size={24} color="#666" />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.proButton}>
-        <Ionicons name="star-outline" size={20} color="#fff" style={styles.crownIcon} />
-        <ThemedText style={styles.proText}>Upgrade</ThemedText>
-      </TouchableOpacity>
+      {userData?.membership === 'PRO' ? (
+        <View style={styles.proButton}>
+          <Ionicons name="star" size={20} color="#fff" style={styles.crownIcon} />
+          <ThemedText style={styles.proText}>PRO</ThemedText>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.proButton}>
+          <Ionicons name="star-outline" size={20} color="#fff" style={styles.crownIcon} />
+          <ThemedText style={styles.proText}>Upgrade</ThemedText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -59,9 +67,14 @@ export function ProfileHeader() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    marginTop:50,
+    marginTop: 50,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
   },
   profileSection: {
     flexDirection: 'row',
@@ -73,6 +86,15 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     marginRight: 12,
+  },
+  profilePlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileInfo: {
     flex: 1,

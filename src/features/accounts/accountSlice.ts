@@ -44,32 +44,32 @@ const accountSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Fetch user data
-      .addCase(fetchUserData.pending, (state) => {
+      .addCase('account/fetchUserData/pending', (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchUserData.fulfilled, (state, action: PayloadAction<UserData>) => {
+      .addCase('account/fetchUserData/fulfilled', (state, action) => {
         state.loading = false;
         state.userData = action.payload;
         state.error = null;
       })
-      .addCase(fetchUserData.rejected, (state, action) => {
+      .addCase('account/fetchUserData/rejected', (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch user data';
       })
       // Update user data
-      .addCase(updateUserData.pending, (state) => {
+      .addCase('account/updateUserData/pending', (state) => {
         state.loading = true;
         state.error = null;
         state.updateSuccess = false;
       })
-      .addCase(updateUserData.fulfilled, (state, action: PayloadAction<UserData>) => {
+      .addCase('account/updateUserData/fulfilled', (state, action) => {
         state.loading = false;
         state.userData = action.payload;
         state.updateSuccess = true;
         state.error = null;
       })
-      .addCase(updateUserData.rejected, (state, action) => {
+      .addCase('account/updateUserData/rejected', (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to update user data';
         state.updateSuccess = false;

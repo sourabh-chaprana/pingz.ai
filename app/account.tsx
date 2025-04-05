@@ -23,6 +23,7 @@ import Animated, {
   useAnimatedStyle, 
   useSharedValue 
 } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 
 // Try to import image picker, but don't fail if it's not available
 let ImagePicker: any = null;
@@ -44,6 +45,7 @@ export default function AccountScreen() {
   const { userData, loading, error, updateSuccess } = useSelector(
     (state: RootState) => state.account
   );
+  const router = useRouter();
 
   // Form state
   const [mobileNumber, setMobileNumber] = useState('');
@@ -455,6 +457,14 @@ export default function AccountScreen() {
   const ProfileHeader = () => {
     return (
       <View style={styles.profileHeader}>
+        {/* Back Button */}
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        
         <View style={styles.profileHeaderContent}>
           {/* Left side - Profile Image */}
           <TouchableOpacity onPress={() => pickImage('profile')}>
@@ -638,7 +648,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileHeader: {
-    // backgroundColor: '#fff',
+    position: 'relative',
+    paddingTop: 30,
     paddingVertical: 20,
     paddingHorizontal: 30,
     borderBottomWidth: 1,
@@ -649,6 +660,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileImageContainer: {
+    marginLeft:30,
     position: 'relative',
     width: 80,
     height: 80,
@@ -875,5 +887,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '500',
     marginLeft: 5,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
 }); 
