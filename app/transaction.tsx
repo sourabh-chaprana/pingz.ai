@@ -19,7 +19,13 @@ import { RootState } from "@/src/store";
 
 // Calendar component for date picker
 const SimpleCalendar = ({ visible, onClose, onSelectDate, initialDate }) => {
-  const [selectedMonth, setSelectedMonth] = useState(initialDate || new Date());
+  // Create a proper today date with time set to midnight for accurate comparisons
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Make sure initialDate is not in the future
+  const safeInitialDate = initialDate && initialDate > today ? today : initialDate;
+  const [selectedMonth, setSelectedMonth] = useState(safeInitialDate || today);
 
   const months = [
     "January",
@@ -78,7 +84,13 @@ const SimpleCalendar = ({ visible, onClose, onSelectDate, initialDate }) => {
   const nextMonth = () => {
     const nextMonth = new Date(selectedMonth);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
-    setSelectedMonth(nextMonth);
+    
+    // Check if the next month would be beyond the current month
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    if (nextMonth.getFullYear() <= currentMonth.getFullYear() && 
+        nextMonth.getMonth() <= currentMonth.getMonth()) {
+      setSelectedMonth(nextMonth);
+    }
   };
 
   const prevMonth = () => {
@@ -133,28 +145,42 @@ const SimpleCalendar = ({ visible, onClose, onSelectDate, initialDate }) => {
           <View style={styles.calendarBody}>
             {weeks.map((week, weekIndex) => (
               <View key={weekIndex} style={styles.weekRow}>
-                {week.map((day, dayIndex) => (
-                  <TouchableOpacity
-                    key={dayIndex}
-                    style={[
-                      styles.dayCell,
-                      !day.currentMonth && styles.notCurrentMonth,
-                    ]}
-                    onPress={() => {
-                      onSelectDate(day.date);
-                      onClose();
-                    }}
-                  >
-                    <ThemedText
+                {week.map((day, dayIndex) => {
+                  // Create date with time set to midnight for accurate comparison
+                  const dayDate = new Date(day.date);
+                  dayDate.setHours(0, 0, 0, 0);
+                  
+                  // Check if the day is in the future
+                  const isFutureDate = dayDate > today;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={dayIndex}
                       style={[
-                        styles.dayText,
-                        !day.currentMonth && styles.notCurrentMonthText,
+                        styles.dayCell,
+                        !day.currentMonth && styles.notCurrentMonth,
+                        isFutureDate && styles.disabledDate,
                       ]}
+                      onPress={() => {
+                        if (!isFutureDate) {
+                          onSelectDate(day.date);
+                          onClose();
+                        }
+                      }}
+                      disabled={isFutureDate}
                     >
-                      {day.day}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
+                      <ThemedText
+                        style={[
+                          styles.dayText,
+                          !day.currentMonth && styles.notCurrentMonthText,
+                          isFutureDate && styles.disabledDateText,
+                        ]}
+                      >
+                        {day.day}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ))}
           </View>
@@ -306,6 +332,9 @@ const TransactionScreen = () => {
   // Calculate for display (1-based)
   const displayPage = currentPage + 1;
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -374,14 +403,28 @@ const TransactionScreen = () => {
       <SimpleCalendar
         visible={showStartDatePicker}
         onClose={() => setShowStartDatePicker(false)}
-        onSelectDate={(date) => setStartDate(date)}
+        onSelectDate={(date) => {
+          // Ensure date is not in the future
+          const selectedDate = new Date(date);
+          selectedDate.setHours(0, 0, 0, 0);
+          if (selectedDate <= today) {
+            setStartDate(date);
+          }
+        }}
         initialDate={startDate || new Date()}
       />
 
       <SimpleCalendar
         visible={showEndDatePicker}
         onClose={() => setShowEndDatePicker(false)}
-        onSelectDate={(date) => setEndDate(date)}
+        onSelectDate={(date) => {
+          // Ensure date is not in the future
+          const selectedDate = new Date(date);
+          selectedDate.setHours(0, 0, 0, 0);
+          if (selectedDate <= today) {
+            setEndDate(date);
+          }
+        }}
         initialDate={endDate || new Date()}
       />
 
@@ -775,6 +818,13 @@ const styles = StyleSheet.create({
   },
   notCurrentMonthText: {
     color: "#999",
+  },
+  disabledDate: {
+    opacity: 0.3,
+    backgroundColor: '#f0f0f0',
+  },
+  disabledDateText: {
+    color: '#aaa',
   },
 });
 

@@ -426,7 +426,11 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="Enter your mobile number"
               value={mobileNumber}
-              onChangeText={setMobileNumber}
+              onChangeText={(text) => {
+                // Remove any spaces and non-numeric characters
+                const cleanedText = text.replace(/[\s\D]/g, '');
+                setMobileNumber(cleanedText);
+              }}
               keyboardType="phone-pad"
             />
           </>

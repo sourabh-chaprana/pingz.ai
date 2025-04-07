@@ -373,8 +373,8 @@ export default function RegisterScreen() {
                 placeholder="Enter your mobile number"
                 value={mobileNumber}
                 onChangeText={(text) => {
-                  // Remove any non-numeric characters
-                  const cleanedText = text.replace(/[^0-9]/g, '');
+                  // Remove any spaces and non-numeric characters
+                  const cleanedText = text.replace(/[\s\D]/g, '');
                   setMobileNumber(cleanedText);
                 }}
                 keyboardType="phone-pad"
