@@ -416,10 +416,83 @@ export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  // Add a state to track initial data loading
+  const [initialDataFetched, setInitialDataFetched] = useState(false);
+
   // Check if user is authenticated
   const isAuthenticated = useSelector((state: RootState) =>
     Boolean(state.auth.token)
   );
+
+  // Get the recent templates from the home state
+  const {
+    recentTemplates,
+    loading: loadingRecentTemplates,
+    error: recentTemplatesError,
+  } = useSelector((state: RootState) => state.home);
+
+  // Get holiday templates
+  const {
+    holidayTemplates,
+    loading: holidayLoading,
+    error: holidayError,
+  } = useSelector((state: RootState) => state.home);
+
+  // Get categories data
+  const { categories, loadingCategories, categoriesError } = useSelector(
+    (state: RootState) => state.templates
+  );
+
+  // Add state to track current recent design index
+  const [recentDesignIndex, setRecentDesignIndex] = useState(0);
+
+  // Fetch data when the component mounts
+  useEffect(() => {
+    if (isAuthenticated && !initialDataFetched) {
+      console.log('Fetching initial home data...');
+      
+      // Use Promise.all to fetch all data in parallel
+      const fetchAllData = async () => {
+        try {
+          await Promise.all([
+            dispatch(fetchCategories()),
+            dispatch(fetchRecentTemplates()),
+            dispatch(fetchWhatsNewTags()),
+            dispatch(fetchHolidayTemplates())
+          ]);
+          
+          console.log('All initial data fetched successfully');
+          setInitialDataFetched(true);
+        } catch (error) {
+          console.error('Error fetching initial data:', error);
+        }
+      };
+      
+      fetchAllData();
+    }
+  }, [isAuthenticated, initialDataFetched, dispatch]);
+
+  // Add new useEffect to log data changes
+  useEffect(() => {
+    console.log('Recent templates updated:', {
+      count: recentTemplates?.length || 0,
+      loading: loadingRecentTemplates,
+      error: recentTemplatesError
+    });
+    
+    console.log('Holiday templates updated:', {
+      count: holidayTemplates?.length || 0,
+      loading: holidayLoading,
+      error: holidayError
+    });
+  }, [
+    recentTemplates, 
+    loadingRecentTemplates, 
+    recentTemplatesError,
+    holidayTemplates,
+    holidayLoading,
+    holidayError
+  ]);
 
   // Handle scroll events
   const handleScroll = Animated.event(
@@ -442,20 +515,6 @@ export default function HomeScreen() {
     router.push(`/templateCategories?category=${categoryName}`);
   };
 
-  const { categories, loadingCategories, categoriesError } = useSelector(
-    (state: RootState) => state.templates
-  );
-
-  // Get the recent templates from the home state
-  const {
-    recentTemplates,
-    loading: loadingRecentTemplates,
-    error: recentTemplatesError,
-  } = useSelector((state: RootState) => state.home);
-
-  // Add state to track current recent design index
-  const [recentDesignIndex, setRecentDesignIndex] = useState(0);
-
   const {
     whatsNewTags,
     whatsNewTemplates,
@@ -464,16 +523,6 @@ export default function HomeScreen() {
   } = useSelector((state: RootState) => state.home);
 
   const [currentWhatsNewIndex, setCurrentWhatsNewIndex] = useState(0);
-
-  useEffect(() => {
-    const fetchWhatsNew = async () => {
-      const result = await dispatch(fetchWhatsNewTags());
-      // Don't pre-fetch the templates, just get the tag groups
-      // We'll call search API only when user clicks on an image
-    };
-
-    fetchWhatsNew();
-  }, [dispatch]);
 
   // Function to handle What's New tag group click - call search API here
   const handleWhatsNewTagClick = (tagGroup: { id: string; label: string; tags: string[] }) => {
@@ -502,31 +551,6 @@ export default function HomeScreen() {
       }))
     )
   );
-
-  // Add console logs to debug
-  useEffect(() => {
-    // Only fetch if authenticated
-    if (isAuthenticated) {
-      // Fetch categories and recent templates
-      dispatch(fetchCategories());
-      dispatch(fetchRecentTemplates());
-      dispatch(fetchWhatsNewTags());
-      dispatch(fetchHolidayTemplates());
-    }
-  }, [isAuthenticated, dispatch]);
-
-  // Add console log to check the state
-  console.log('Recent templates state:', {
-    recentTemplates,
-    loadingRecentTemplates,
-    recentTemplatesError
-  });
-
-  const {
-    holidayTemplates,
-    loading: holidayLoading,
-    error: holidayError,
-  } = useSelector((state: RootState) => state.home);
 
   return (
     <ThemedView style={styles.container}>
@@ -666,7 +690,7 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recent designs</ThemedText>
-            {recentTemplates.length > 0 && (
+            {recentTemplates?.length > 0 && (
               <TouchableOpacity onPress={() => router.push("/myTemplates")}>
                 <ThemedText style={styles.seeAll}>See all</ThemedText>
               </TouchableOpacity>
@@ -683,7 +707,7 @@ export default function HomeScreen() {
             <ThemedText style={styles.errorText}>
               {recentTemplatesError}
             </ThemedText>
-          ) : recentTemplates.length === 0 ? (
+          ) : !recentTemplates || recentTemplates.length === 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -712,11 +736,12 @@ export default function HomeScreen() {
                 scrollEventThrottle={16}
                 pagingEnabled
               >
+                {console.log('Rendering recent templates:', recentTemplates.slice(0, 5).map(t => t.id))}
                 {recentTemplates.slice(0, 5).map((template) => (
                   <RecentDesignCard
                     key={template.id}
                     id={template.id}
-                    title={template.templateName}
+                    title={template.templateName || "Untitled Template"}
                     description={template.description || "Design"}
                     imageUrl={template.url}
                   />
@@ -740,11 +765,11 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Holidays section - positioned after Recent designs section */}
+        {/* Holidays section - similar update as above */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Holidays template</ThemedText>
-            {holidayTemplates.length > 0 && (
+            {holidayTemplates?.length > 0 && (
               <TouchableOpacity onPress={() => router.push("/holiday")}>
                 <ThemedText style={styles.seeAll}>See all</ThemedText>
               </TouchableOpacity>
@@ -761,7 +786,7 @@ export default function HomeScreen() {
             <ThemedText style={styles.errorText}>
               {holidayError}
             </ThemedText>
-          ) : holidayTemplates.length === 0 ? (
+          ) : !holidayTemplates || holidayTemplates.length === 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -779,11 +804,12 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.recentDesignsScrollContent}
                 pagingEnabled
               >
+                {console.log('Rendering holiday templates:', holidayTemplates.slice(0, 5).map(t => t.id))}
                 {holidayTemplates.slice(0, 5).map((template) => (
                   <RecentDesignCard
                     key={template.id}
                     id={template.id}
-                    title={template.templateName}
+                    title={template.templateName || "Untitled Template"}
                     description={template.description || "Holiday Design"}
                     imageUrl={template.url}
                   />

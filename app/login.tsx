@@ -138,7 +138,7 @@ export default function LoginScreen() {
           setShowOtpModal(true);
         }
       } else {
-        // Email login flow - requires password
+        // Email login flow
         if (!email || !password) {
           Toast.show({
             type: 'error',
@@ -148,20 +148,20 @@ export default function LoginScreen() {
           return;
         }
         
-        console.log('Attempting login with:', { email }); // Don't log password
+        console.log('Attempting login with:', { email });
         const result = await dispatch(login({ email, password })).unwrap();
         console.log('Login API response:', result);
         
         if (result) {
-          // Store the tokens in AsyncStorage
-          await AsyncStorage.setItem('auth_token', result.idToken);
-          await AsyncStorage.setItem('refreshToken', result.refreshToken || '');
-          
-          // Update Redux store
+          // First update Redux store immediately
           dispatch(setTokens({ 
             token: result.idToken, 
             refreshToken: result.refreshToken 
           }));
+          
+          // Then store tokens in AsyncStorage
+          await AsyncStorage.setItem('auth_token', result.idToken);
+          await AsyncStorage.setItem('refreshToken', result.refreshToken || '');
 
           Toast.show({
             type: 'success',
@@ -169,10 +169,10 @@ export default function LoginScreen() {
             text2: result.message || 'Login successful',
           });
 
-          // Navigate to the home tab with a slight delay to allow state updates
+          // Add a small delay to ensure tokens are saved before navigation
           setTimeout(() => {
             router.replace('/(tabs)');
-          }, 100);
+          }, 300);
         }
       }
     } catch (error) {

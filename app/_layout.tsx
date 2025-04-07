@@ -44,6 +44,7 @@ import { clearSearch } from "@/src/features/search/searchSlice";
 import SearchResults from "@/app/SearchResult";
 import { logoutUser, setTokens } from "@/src/features/auth/authSlice";
 import { Slot } from 'expo-router';
+import { performLogout } from "@/src/services/api";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -182,16 +183,10 @@ function CustomDrawerContent(props: any) {
 
   const handleLogout = async () => {
     try {
-      // Clear the auth token from storage
-      await AsyncStorage.removeItem('auth_token');
-      await AsyncStorage.removeItem('refreshToken');
-
-      // Clear any other user-related data from storage if needed
+      // Use the centralized logout function
+      await performLogout();
       
-      // Use the renamed action
-      dispatch(logoutUser());
-
-      // Navigate to login screen
+      // Explicitly navigate to login screen
       router.replace('/login');
 
       // Show success message
