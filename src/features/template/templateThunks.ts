@@ -28,28 +28,284 @@ const IMAGE_API_URL = 'https://pingz.ai/api/render/api/image/overlay-text';
 const TOKEN_KEY = 'token';
 const CORS_PROXY = 'https://corsproxy.io/?';
 
-// Icon mapping object for categories
-const categoryIconMap: Record<string, { icon: string; color: string }> = {
-  recommended: { icon: 'star', color: '#FF9933' },
-  ecommerce: { icon: 'cart', color: '#00CC99' },
-  marketing: { icon: 'megaphone', color: '#6699FF' },
-  events: { icon: 'calendar', color: '#9966CC' },
-  holidays: { icon: 'gift', color: '#FF6666' },
-  anniversary: { icon: 'heart', color: '#FF3366' },
-  birthday: { icon: 'gift', color: '#9933CC' },
-  auto_dealers: { icon: 'car', color: '#666666' },
-  restaurants: { icon: 'restaurant', color: '#FF6600' },
-  flirt: { icon: 'heart', color: '#FF3366' },
-  shayari_poem: { icon: 'leaf', color: '#00CC99' },
-  fashion_style: { icon: 'shirt', color: '#3366CC' },
-  invitations: { icon: 'mail', color: '#3399FF' },
-  default: { icon: 'apps', color: '#999999' }
+// Updated approach using icon library mappings
+// This assumes we're using icons from libraries like Ionicons (currently in your code)
+// but the approach works similarly with Lucide icons
+
+// Define icon categories for semantic matching
+const iconMappings = {
+  // Events and occasions
+  'anniversary': 'heart',
+  'birthday': 'gift',
+  'wedding': 'heart-circle',
+  'graduation': 'school',
+  'celebration': 'sparkles',
+  'party': 'sparkles',
+  'holiday': 'gift',
+  'festival': 'sparkles',
+  'occasion': 'calendar',
+  'event': 'calendar',
+  'ceremony': 'ribbon',
+  
+  // Business and marketing
+  'marketing': 'megaphone',
+  'business': 'briefcase',
+  'corporate': 'business',
+  'professional': 'briefcase',
+  'ecommerce': 'cart',
+  'shop': 'cart',
+  'store': 'cart',
+  'sales': 'cash',
+  'finance': 'cash',
+  'investment': 'trending-up',
+  
+  // Food and dining
+  'food': 'restaurant',
+  'restaurant': 'restaurant',
+  'dining': 'restaurant',
+  'cuisine': 'restaurant',
+  'cooking': 'restaurant',
+  'bakery': 'cafe',
+  'cafe': 'cafe',
+  
+  // Fashion and appearance
+  'fashion': 'shirt',
+  'clothing': 'shirt',
+  'style': 'shirt',
+  'outfit': 'shirt',
+  'accessories': 'glasses',
+  'beauty': 'brush',
+  
+  // Travel and transport
+  'travel': 'airplane',
+  'tourism': 'airplane',
+  'vacation': 'airplane',
+  'trip': 'airplane',
+  'auto': 'car',
+  'vehicle': 'car',
+  'automotive': 'car',
+  'transport': 'car',
+  
+  // Communication
+  'invitation': 'mail',
+  'invite': 'mail',
+  'announcement': 'mail',
+  'message': 'mail',
+  'communication': 'chatbubbles',
+  'social': 'people',
+  'community': 'people',
+  
+  // Education and knowledge
+  'education': 'school',
+  'learning': 'school',
+  'academic': 'school',
+  'training': 'book',
+  'workshop': 'build',
+  
+  // Health and wellness
+  'health': 'fitness',
+  'medical': 'medkit',
+  'wellness': 'fitness',
+  'fitness': 'barbell',
+  'exercise': 'barbell',
+  'yoga': 'body',
+  
+  // Arts and entertainment
+  'art': 'color-palette',
+  'design': 'brush',
+  'creative': 'color-palette',
+  'music': 'musical-notes',
+  'entertainment': 'film',
+  'movie': 'film',
+  'game': 'game-controller',
+  'gaming': 'game-controller',
+  'photography': 'camera',
+  
+  // Other categories
+  'nature': 'leaf',
+  'environment': 'leaf',
+  'technology': 'hardware-chip',
+  'tech': 'hardware-chip',
+  'digital': 'hardware-chip',
+  'sports': 'basketball',
+  'religious': 'book',
+  'spiritual': 'book',
+  'charity': 'heart',
+  'nonprofit': 'people',
+  
+  // Special categories
+  'thank': 'thumbs-up',
+  'appreciation': 'thumbs-up',
+  'trending': 'trending-up',
+  'popular': 'trending-up',
+  'recommended': 'star',
+  'featured': 'star',
+  'new': 'sparkles',
 };
 
-// Helper function to get icon data
+// Color palette with semantic associations
+const colorCategories = {
+  love: ['#FF3366', '#FF6B81', '#FF4757', '#FF6B6B'],
+  nature: ['#2ECC71', '#26de81', '#20bf6b', '#2ed573'],
+  business: ['#3498DB', '#0984e3', '#1e3799', '#4a69bd'],
+  food: ['#FF9933', '#FF6600', '#FF7F50', '#FFA07A'],
+  creativity: ['#9C27B0', '#6C5CE7', '#8E44AD', '#A29BFE'],
+  technology: ['#34495E', '#2c3e50', '#57606f', '#747d8c'],
+  celebration: ['#F1C40F', '#feca57', '#ffdd59', '#FFCD00'],
+  health: ['#00CC99', '#1abc9c', '#16a085', '#55efc4'],
+  communication: ['#00BCD4', '#81ecec', '#00cec9', '#34e7e4'],
+  default: ['#607D8B', '#7f8c8d', '#95a5a6', '#b2bec3']
+};
+
+// Map categories to color groups
+const categoryColorAssociations = {
+  // Love/Emotion
+  'anniversary': 'love',
+  'wedding': 'love',
+  'heart': 'love',
+  'flirt': 'love',
+  'valentine': 'love',
+  
+  // Nature
+  'environment': 'nature',
+  'garden': 'nature',
+  'plant': 'nature',
+  'eco': 'nature',
+  'outdoor': 'nature',
+  
+  // Business
+  'professional': 'business',
+  'corporate': 'business',
+  'marketing': 'business',
+  'finance': 'business',
+  'ecommerce': 'business',
+  'commerce': 'business',
+  'sales': 'business',
+  
+  // Food
+  'restaurant': 'food',
+  'dining': 'food',
+  'cuisine': 'food',
+  'cafe': 'food',
+  'bakery': 'food',
+  'cooking': 'food',
+  
+  // Creativity
+  'design': 'creativity',
+  'art': 'creativity',
+  'music': 'creativity',
+  'creative': 'creativity',
+  'photography': 'creativity',
+  
+  // Technology
+  'tech': 'technology',
+  'digital': 'technology',
+  'software': 'technology',
+  'electronic': 'technology',
+  'gadget': 'technology',
+  
+  // Celebration
+  'birthday': 'celebration',
+  'party': 'celebration',
+  'festival': 'celebration',
+  'holiday': 'celebration',
+  'event': 'celebration',
+  
+  // Health
+  'fitness': 'health',
+  'wellness': 'health',
+  'medical': 'health',
+  'exercise': 'health',
+  'yoga': 'health',
+  
+  // Communication
+  'invitation': 'communication',
+  'message': 'communication',
+  'mail': 'communication',
+  'contact': 'communication',
+  'email': 'communication'
+};
+
+// Enhanced function that finds the most appropriate icon and semantically relevant color
 const getCategoryIconData = (categoryName: string) => {
-  const normalizedName = categoryName.toLowerCase().replace(/[_\s]+/g, '_');
-  return categoryIconMap[normalizedName] || categoryIconMap.default;
+  if (!categoryName) return { icon: 'apps', color: colorCategories.default[0] };
+  
+  // Normalize the category name
+  const normalizedName = categoryName.toLowerCase().trim();
+  const words = normalizedName.split(/[\s_-]+/);
+  
+  // Find the most appropriate icon
+  let iconFound = false;
+  let iconName = '';
+  
+  // 1. Try to find direct matches for the whole category name
+  if (iconMappings[normalizedName]) {
+    iconName = iconMappings[normalizedName];
+    iconFound = true;
+  }
+  
+  // 2. If not found, try to match with individual words
+  if (!iconFound) {
+    for (const word of words) {
+      if (iconMappings[word]) {
+        iconName = iconMappings[word];
+        iconFound = true;
+        break;
+      }
+    }
+  }
+  
+  // 3. If still not found, try partial matching
+  if (!iconFound) {
+    // Sort the keys by length (descending) to match the most specific keys first
+    const sortedKeys = Object.keys(iconMappings).sort((a, b) => b.length - a.length);
+    
+    for (const key of sortedKeys) {
+      if (normalizedName.includes(key)) {
+        iconName = iconMappings[key];
+        iconFound = true;
+        break;
+      }
+    }
+  }
+  
+  // If no icon found, use default
+  if (!iconFound) {
+    iconName = 'apps';
+  }
+  
+  // Find the most appropriate color category
+  let colorCategory = 'default';
+  
+  // Try to find direct matches for color association
+  for (const word of words) {
+    if (categoryColorAssociations[word]) {
+      colorCategory = categoryColorAssociations[word];
+      break;
+    }
+  }
+  
+  // If no direct match, try partial matching
+  if (colorCategory === 'default') {
+    for (const key in categoryColorAssociations) {
+      if (normalizedName.includes(key)) {
+        colorCategory = categoryColorAssociations[key];
+        break;
+      }
+    }
+  }
+  
+  // Get a color from the appropriate category - use the hash of the category name to get consistent color
+  const colorOptions = colorCategories[colorCategory];
+  const hashCode = normalizedName.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  
+  const colorIndex = Math.abs(hashCode) % colorOptions.length;
+  const color = colorOptions[colorIndex];
+  
+  return { icon: iconName, color };
 };
 
 // Template category

@@ -571,7 +571,7 @@ export default function HomeScreen() {
           />
           <View style={styles.heroTextContainer}>
             <ThemedText style={styles.heroText}>
-              What will you design today?
+            What you want to Communicate today ?
             </ThemedText>
           </View>
         </View>
