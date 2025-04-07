@@ -24,6 +24,8 @@ import Animated, {
   useSharedValue 
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import CalendarPicker from 'react-native-calendar-picker';
+import moment from 'moment';
 
 // Try to import image picker, but don't fail if it's not available
 let ImagePicker: any = null;
@@ -75,6 +77,10 @@ export default function AccountScreen() {
 
   // Add state for section collapse
   const [expandedSection, setExpandedSection] = useState<string>('personal');
+  
+  // Add state for showing/hiding calendar
+  const [showDobCalendar, setShowDobCalendar] = useState(false);
+  const [showAnniversaryCalendar, setShowAnniversaryCalendar] = useState(false);
   
   // Function to handle section toggle
   const toggleSection = (section: string) => {
@@ -498,6 +504,19 @@ export default function AccountScreen() {
     );
   };
 
+  // Add the missing handleDateSelect function
+  const handleDateSelect = (type: 'dob' | 'anniversary', date: any) => {
+    const formattedDate = moment(date).format('YYYY-MM-DD');
+    
+    if (type === 'dob') {
+      setDob(formattedDate);
+      setShowDobCalendar(false);
+    } else {
+      setAnniversaryDate(formattedDate);
+      setShowAnniversaryCalendar(false);
+    }
+  };
+
   if (loading && !userData) {
     return (
       <View style={styles.loadingContainer}>
@@ -567,21 +586,60 @@ export default function AccountScreen() {
             <>
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Date of Birth</ThemedText>
-                <TextInput
-                  style={styles.input}
-                  value={dob}
-                  onChangeText={setDob}
-                  placeholder="YYYY-MM-DD"
-                />
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => setShowDobCalendar(!showDobCalendar)}
+                >
+                  <TextInput
+                    style={styles.input}
+                    value={dob}
+                    placeholder="YYYY-MM-DD"
+                    editable={false}
+                  />
+                  <Ionicons name="calendar-outline" size={20} color="#666" style={styles.calendarIcon} />
+                </TouchableOpacity>
+                
+                {showDobCalendar && (
+                  <View style={styles.calendarContainer}>
+                    <CalendarPicker
+                      onDateChange={(date) => handleDateSelect('dob', date)}
+                      selectedStartDate={dob ? new Date(dob) : undefined}
+                      width={300}
+                      height={320}
+                      selectedDayColor="#8B3DFF"
+                      selectedDayTextColor="#FFFFFF"
+                    />
+                  </View>
+                )}
               </View>
+              
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Anniversary Date</ThemedText>
-                <TextInput
-                  style={styles.input}
-                  value={anniversaryDate}
-                  onChangeText={setAnniversaryDate}
-                  placeholder="YYYY-MM-DD"
-                />
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => setShowAnniversaryCalendar(!showAnniversaryCalendar)}
+                >
+                  <TextInput
+                    style={styles.input}
+                    value={anniversaryDate}
+                    placeholder="YYYY-MM-DD"
+                    editable={false}
+                  />
+                  <Ionicons name="calendar-outline" size={20} color="#666" style={styles.calendarIcon} />
+                </TouchableOpacity>
+                
+                {showAnniversaryCalendar && (
+                  <View style={styles.calendarContainer}>
+                    <CalendarPicker
+                      onDateChange={(date) => handleDateSelect('anniversary', date)}
+                      selectedStartDate={anniversaryDate ? new Date(anniversaryDate) : undefined}
+                      width={300}
+                      height={320}
+                      selectedDayColor="#8B3DFF"
+                      selectedDayTextColor="#FFFFFF"
+                    />
+                  </View>
+                )}
               </View>
             </>
           ))}
@@ -910,5 +968,26 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
     }),
+  },
+  datePickerButton: {
+    position: 'relative',
+  },
+  calendarIcon: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
+  },
+  calendarContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 10,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e1e4e8',
   },
 }); 
