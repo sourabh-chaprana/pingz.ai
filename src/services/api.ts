@@ -5,8 +5,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logoutUser, setTokens } from "../features/auth/authSlice";
 import { useRouter } from "expo-router";
 
-export const BASE_URL = "https://dev.pingz.ai/api/";
-// export const BASE_URL = 'https://pingz.ai/api/';
+// export const BASE_URL = "https://dev.pingz.ai/api/";
+export const BASE_URL = 'https://pingz.ai/api/';
 
 // List of endpoints that don't require authentication
 const publicEndpoints = [

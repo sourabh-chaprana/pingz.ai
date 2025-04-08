@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Switch, Modal } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Switch, Modal, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
@@ -647,30 +647,37 @@ export default function LoginScreen() {
               />
             </View>
             
-            <View style={styles.countryListContainer}>
-              {filteredCountryCodes.map((country) => (
-                <TouchableOpacity
-                  key={country.name}
-                  style={styles.countryItem}
-                  onPress={() => {
-                    setCountryCode(country.code);
-                    setShowCountryCodeModal(false);
-                    setSearchQuery('');
-                    setFilteredCountryCodes(countryCodes);
-                  }}
-                >
-                  <ThemedText style={styles.countryFlag}>{country.flag}</ThemedText>
-                  <ThemedText style={styles.countryName}>{country.name}</ThemedText>
-                  <ThemedText style={styles.countryCodeItemText}>{country.code}</ThemedText>
-                </TouchableOpacity>
-              ))}
-              
-              {filteredCountryCodes.length === 0 && (
-                <View style={styles.noResultsContainer}>
-                  <ThemedText style={styles.noResultsText}>No countries found</ThemedText>
-                </View>
-              )}
-            </View>
+            <ScrollView 
+              style={styles.countryListScrollView}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.countryListContainer}>
+                {filteredCountryCodes.map((country) => (
+                  <TouchableOpacity
+                    key={country.name}
+                    style={styles.countryItem}
+                    onPress={() => {
+                      setCountryCode(country.code);
+                      setShowCountryCodeModal(false);
+                      setSearchQuery('');
+                      setFilteredCountryCodes(countryCodes);
+                    }}
+                  >
+                    <View style={styles.flagContainer}>
+                      <ThemedText style={styles.countryFlag}>{country.flag}</ThemedText>
+                    </View>
+                    <ThemedText style={styles.countryName}>{country.name}</ThemedText>
+                    <ThemedText style={styles.countryCodeItemText}>{country.code}</ThemedText>
+                  </TouchableOpacity>
+                ))}
+                
+                {filteredCountryCodes.length === 0 && (
+                  <View style={styles.noResultsContainer}>
+                    <ThemedText style={styles.noResultsText}>No countries found</ThemedText>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
             
             <TouchableOpacity 
               style={styles.cancelButton}
@@ -980,8 +987,8 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 400,
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
     maxHeight: '80%',
     ...Platform.select({
       ios: {
@@ -996,8 +1003,9 @@ const styles = StyleSheet.create({
     }),
   },
   countryCodeTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
+    marginTop: 20,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -1005,8 +1013,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
+    marginHorizontal: 16,
     marginBottom: 16,
   },
   searchIcon: {
@@ -1018,23 +1027,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: 48,
   },
-  countryListContainer: {
-    maxHeight: 350,
+  countryListScrollView: {
     width: '100%',
+    maxHeight: '70%',
+  },
+  countryListContainer: {
+    width: '100%',
+    paddingBottom: 8,
   },
   countryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  flagContainer: {
+    width: 32,
+    height: 24,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   countryFlag: {
     fontSize: 24,
-    marginRight: 12,
-    width: 32,
-    textAlign: 'center',
   },
   countryName: {
     flex: 1,
@@ -1049,17 +1066,16 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   cancelButton: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
     alignItems: 'center',
     width: '100%',
   },
   cancelButtonText: {
     fontSize: 16,
     color: '#666',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   noResultsContainer: {
     padding: 20,
