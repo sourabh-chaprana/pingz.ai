@@ -31,6 +31,22 @@ export default function RegisterScreen() {
   const [countdown, setCountdown] = useState(0);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [countryCode, setCountryCode] = useState('+91');
+  const [showCountryCodeModal, setShowCountryCodeModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredCountryCodes, setFilteredCountryCodes] = useState([
+    { name: 'India', code: '+91', flag: '🇮🇳' },
+    { name: 'USA', code: '+1', flag: '🇺🇸' },
+    { name: 'Canada', code: '+1', flag: '🇨🇦' },
+    { name: 'UK', code: '+44', flag: '🇬🇧' },
+    { name: 'Australia', code: '+61', flag: '🇦🇺' },
+    { name: 'Germany', code: '+49', flag: '🇩🇪' },
+    { name: 'France', code: '+33', flag: '🇫🇷' },
+    { name: 'China', code: '+86', flag: '🇨🇳' },
+    { name: 'Japan', code: '+81', flag: '🇯🇵' },
+    { name: 'Russia', code: '+7', flag: '🇷🇺' },
+    { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+    { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+  ]);
   
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
@@ -77,21 +93,21 @@ export default function RegisterScreen() {
           return;
         }
         
-        // Create payload for mobile registration with country code
+        // Format mobile number with space between country code and number
+        const formattedMobileNumber = `${countryCode} ${mobileNumber}`;
+        
+        // Create payload for mobile registration with properly formatted number
         const payload = {
           name,
-          mobileNumber: `${countryCode}${mobileNumber}`,
+          mobileNumber: formattedMobileNumber,
           userType
         };
         
         const result = await dispatch(register(payload)).unwrap();
         if (result) {
-          
           // Store transaction ID for OTP verification
-            setTxnId(result?.txnId);
-
-            console.log('Mobile registration started:', result,);
-
+          setTxnId(result?.txnId);
+          console.log('Mobile registration started:', result);
           
           Toast.show({
             type: 'success',
@@ -200,8 +216,13 @@ export default function RegisterScreen() {
       if (result && result.success) {
         // After successful verification, attempt auto-login
         try {
+          // Format mobile number with space for login
+          const formattedMobileNumber = useMobile 
+            ? `${countryCode} ${mobileNumber}`
+            : null;
+            
           const loginPayload = useMobile 
-            ? { mobileNumber: `${countryCode}${mobileNumber}`, loginType: 'mobile' }
+            ? { mobileNumber: formattedMobileNumber, loginType: 'mobile' }
             : { email, password };
             
           const loginResult = await dispatch(login(loginPayload)).unwrap();
@@ -266,9 +287,12 @@ export default function RegisterScreen() {
         });
         return;
       }
+      // Format mobile number with space
+      const formattedMobileNumber = `${countryCode} ${mobileNumber}`;
+      
       const payload = {
         name,
-        mobileNumber: `${countryCode}${mobileNumber}`,
+        mobileNumber: formattedMobileNumber,
         userType
       };
       const result = await dispatch(register(payload)).unwrap();
@@ -323,6 +347,45 @@ export default function RegisterScreen() {
     setMobileNumber('');
   };
 
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredCountryCodes([
+        { name: 'India', code: '+91', flag: '🇮🇳' },
+        { name: 'USA', code: '+1', flag: '🇺🇸' },
+        { name: 'Canada', code: '+1', flag: '🇨🇦' },
+        { name: 'UK', code: '+44', flag: '🇬🇧' },
+        { name: 'Australia', code: '+61', flag: '🇦🇺' },
+        { name: 'Germany', code: '+49', flag: '🇩🇪' },
+        { name: 'France', code: '+33', flag: '🇫🇷' },
+        { name: 'China', code: '+86', flag: '🇨🇳' },
+        { name: 'Japan', code: '+81', flag: '🇯🇵' },
+        { name: 'Russia', code: '+7', flag: '🇷🇺' },
+        { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+        { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+      ]);
+    } else {
+      const filtered = [
+        { name: 'India', code: '+91', flag: '🇮🇳' },
+        { name: 'USA', code: '+1', flag: '🇺🇸' },
+        { name: 'Canada', code: '+1', flag: '🇨🇦' },
+        { name: 'UK', code: '+44', flag: '🇬🇧' },
+        { name: 'Australia', code: '+61', flag: '🇦🇺' },
+        { name: 'Germany', code: '+49', flag: '🇩🇪' },
+        { name: 'France', code: '+33', flag: '🇫🇷' },
+        { name: 'China', code: '+86', flag: '🇨🇳' },
+        { name: 'Japan', code: '+81', flag: '🇯🇵' },
+        { name: 'Russia', code: '+7', flag: '🇷🇺' },
+        { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+        { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+      ].filter(country => 
+        country.name.toLowerCase().includes(text.toLowerCase()) ||
+        country.code.includes(text)
+      );
+      setFilteredCountryCodes(filtered);
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.card}>
@@ -365,9 +428,13 @@ export default function RegisterScreen() {
           <>
             <ThemedText style={styles.inputLabel}>Mobile Number</ThemedText>
             <View style={styles.phoneContainer}>
-              <View style={styles.countryCode}>
+              <TouchableOpacity 
+                style={styles.countryCodeSelector}
+                onPress={() => setShowCountryCodeModal(true)}
+              >
                 <ThemedText style={styles.countryCodeText}>{countryCode}</ThemedText>
-              </View>
+                <Ionicons name="chevron-down" size={16} color="#666" />
+              </TouchableOpacity>
               <TextInput
                 style={styles.phoneInput}
                 placeholder="Enter your mobile number"
@@ -454,7 +521,7 @@ export default function RegisterScreen() {
           <View style={styles.otpModalContainer}>
             <ThemedText style={styles.otpTitle}>Verify your {useMobile ? 'mobile number' : 'email'}</ThemedText>
             <ThemedText style={styles.otpDescription}>
-              Enter the 6-digit code sent to {useMobile ? mobileNumber : email}
+              Enter the 6-digit code sent to {useMobile ? `${countryCode} ${mobileNumber}` : email}
             </ThemedText>
 
             <View style={styles.otpInputContainer}>
@@ -509,35 +576,92 @@ export default function RegisterScreen() {
             <TouchableOpacity onPress={handleCloseModal}>
               <ThemedText style={styles.cancelText}>Cancel</ThemedText>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
-            {/* <TouchableOpacity 
-              style={styles.pasteButton}
-              onPress={async () => {
-                try {
-                  const clipboardContent = await Clipboard.getStringAsync();
-                  // Check if clipboard contains a 6-digit number
-                  const otpRegex = /\b\d{6}\b/;
-                  const match = clipboardContent.match(otpRegex);
-                  
-                  if (match && match[0]) {
-                    const clipboardOtp = match[0].split('');
-                    setOtp(clipboardOtp);
-                  } else {
-                    Toast.show({
-                      type: 'error',
-                      text1: 'Invalid OTP',
-                      text2: 'No valid 6-digit code found in clipboard',
-                    });
-                  }
-                } catch (error) {
-                  console.error('Failed to read clipboard:', error);
-                }
+      <Modal
+        visible={showCountryCodeModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCountryCodeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.countryCodeModalContainer}>
+            <ThemedText style={styles.countryCodeTitle}>Select Country Code</ThemedText>
+            
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search country..."
+                value={searchQuery}
+                onChangeText={handleSearch}
+                autoFocus={true}
+              />
+            </View>
+            
+            <View style={styles.countryListContainer}>
+              {filteredCountryCodes.map((country) => (
+                <TouchableOpacity
+                  key={country.name}
+                  style={styles.countryItem}
+                  onPress={() => {
+                    setCountryCode(country.code);
+                    setShowCountryCodeModal(false);
+                    setSearchQuery('');
+                    setFilteredCountryCodes([
+                      { name: 'India', code: '+91', flag: '🇮🇳' },
+                      { name: 'USA', code: '+1', flag: '🇺🇸' },
+                      { name: 'Canada', code: '+1', flag: '🇨🇦' },
+                      { name: 'UK', code: '+44', flag: '🇬🇧' },
+                      { name: 'Australia', code: '+61', flag: '🇦🇺' },
+                      { name: 'Germany', code: '+49', flag: '🇩🇪' },
+                      { name: 'France', code: '+33', flag: '🇫🇷' },
+                      { name: 'China', code: '+86', flag: '🇨🇳' },
+                      { name: 'Japan', code: '+81', flag: '🇯🇵' },
+                      { name: 'Russia', code: '+7', flag: '🇷🇺' },
+                      { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+                      { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+                    ]);
+                  }}
+                >
+                  <ThemedText style={styles.countryFlag}>{country.flag}</ThemedText>
+                  <ThemedText style={styles.countryName}>{country.name}</ThemedText>
+                  <ThemedText style={styles.countryCodeItemText}>{country.code}</ThemedText>
+                </TouchableOpacity>
+              ))}
+              
+              {filteredCountryCodes.length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <ThemedText style={styles.noResultsText}>No countries found</ThemedText>
+                </View>
+              )}
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => {
+                setShowCountryCodeModal(false);
+                setSearchQuery('');
+                setFilteredCountryCodes([
+                  { name: 'India', code: '+91', flag: '🇮🇳' },
+                  { name: 'USA', code: '+1', flag: '🇺🇸' },
+                  { name: 'Canada', code: '+1', flag: '🇨🇦' },
+                  { name: 'UK', code: '+44', flag: '🇬🇧' },
+                  { name: 'Australia', code: '+61', flag: '🇦🇺' },
+                  { name: 'Germany', code: '+49', flag: '🇩🇪' },
+                  { name: 'France', code: '+33', flag: '🇫🇷' },
+                  { name: 'China', code: '+86', flag: '🇨🇳' },
+                  { name: 'Japan', code: '+81', flag: '🇯🇵' },
+                  { name: 'Russia', code: '+7', flag: '🇷🇺' },
+                  { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+                  { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+                ]);
               }}
             >
-              <ThemedText style={styles.pasteButtonText}>
-                Paste from clipboard
-              </ThemedText>
-            </TouchableOpacity> */}
+              <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -833,16 +957,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  countryCode: {
+  countryCodeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f5f5f5',
     padding: 16,
     borderRadius: 8,
     marginRight: 8,
-    minWidth: 65,
+    minWidth: 80,
+    justifyContent: 'space-between',
   },
   countryCodeText: {
     fontSize: 16,
     color: '#333',
+    marginRight: 4,
   },
   phoneInput: {
     flex: 1,
@@ -850,5 +978,98 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     fontSize: 16,
+  },
+  countryCodeModalContainer: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    maxHeight: '80%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  countryCodeTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    height: 48,
+  },
+  countryListContainer: {
+    maxHeight: 350,
+    width: '100%',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  countryFlag: {
+    fontSize: 24,
+    marginRight: 12,
+    width: 32,
+    textAlign: 'center',
+  },
+  countryName: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  countryCodeItemText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+    width: 50,
+    textAlign: 'right',
+  },
+  cancelButton: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    width: '100%',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#666',
   },
 });
