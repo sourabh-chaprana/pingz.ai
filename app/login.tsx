@@ -87,6 +87,43 @@ export default function LoginScreen() {
     })
   });
 
+  const [showCountryCodeModal, setShowCountryCodeModal] = useState(false);
+  const [countryCode, setCountryCode] = useState('+91'); // Default to India
+
+  // Common country codes
+  const countryCodes = [
+    { name: 'India', code: '+91', flag: '🇮🇳' },
+    { name: 'USA', code: '+1', flag: '🇺🇸' },
+    { name: 'Canada', code: '+1', flag: '🇨🇦' },
+    { name: 'UK', code: '+44', flag: '🇬🇧' },
+    { name: 'Australia', code: '+61', flag: '🇦🇺' },
+    { name: 'Germany', code: '+49', flag: '🇩🇪' },
+    { name: 'France', code: '+33', flag: '🇫🇷' },
+    { name: 'China', code: '+86', flag: '🇨🇳' },
+    { name: 'Japan', code: '+81', flag: '🇯🇵' },
+    { name: 'Russia', code: '+7', flag: '🇷🇺' },
+    { name: 'Brazil', code: '+55', flag: '🇧🇷' },
+    { name: 'South Africa', code: '+27', flag: '🇿🇦' },
+  ];
+
+  // Add this state for search functionality
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredCountryCodes, setFilteredCountryCodes] = useState(countryCodes);
+
+  // Add this function to handle search
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredCountryCodes(countryCodes);
+    } else {
+      const filtered = countryCodes.filter(country => 
+        country.name.toLowerCase().includes(text.toLowerCase()) ||
+        country.code.includes(text)
+      );
+      setFilteredCountryCodes(filtered);
+    }
+  };
+
   const startCountdownTimer = () => {
     setCountdown(60);
     
@@ -120,8 +157,13 @@ export default function LoginScreen() {
           return;
         }
         
-        // Send OTP to mobile number
-        const result = await dispatch(resendOtp({ mobileNumber })).unwrap();
+        // Format the mobile number with a space between country code and number
+        const formattedMobileNumber = `${countryCode} ${mobileNumber}`;
+        
+        // Send OTP to mobile number with country code
+        const result = await dispatch(resendOtp({ 
+          mobileNumber: formattedMobileNumber
+        })).unwrap();
         
         if (result && result.txnId) {
           setTxnId(result.txnId);
@@ -210,11 +252,14 @@ export default function LoginScreen() {
     try {
       setOtpVerificationLoading(true);
       
+      // Format the mobile number with a space
+      const formattedMobileNumber = `${countryCode} ${mobileNumber}`;
+      
       // Login with OTP
       const payload = { 
         otp: otpCode,
         txnId: txnId,
-        mobileNumber,
+        mobileNumber: formattedMobileNumber,
         loginType: 'mobile' // Add this to differentiate from email login
       };
       
@@ -276,7 +321,12 @@ export default function LoginScreen() {
         return;
       }
       
-      const result = await dispatch(resendOtp({ mobileNumber })).unwrap();
+      // Format the mobile number with a space
+      const formattedMobileNumber = `${countryCode} ${mobileNumber}`;
+      
+      const result = await dispatch(resendOtp({ 
+        mobileNumber: formattedMobileNumber 
+      })).unwrap();
       
       if (result && result.txnId) {
         setTxnId(result.txnId);
@@ -422,17 +472,26 @@ export default function LoginScreen() {
         {useMobile ? (
           <>
             <ThemedText style={styles.inputLabel}>Mobile Number</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your mobile number"
-              value={mobileNumber}
-              onChangeText={(text) => {
-                // Remove any spaces and non-numeric characters
-                const cleanedText = text.replace(/[\s\D]/g, '');
-                setMobileNumber(cleanedText);
-              }}
-              keyboardType="phone-pad"
-            />
+            <View style={styles.phoneContainer}>
+              <TouchableOpacity 
+                style={styles.countryCodeSelector}
+                onPress={() => setShowCountryCodeModal(true)}
+              >
+                <ThemedText style={styles.countryCodeText}>{countryCode}</ThemedText>
+                <Ionicons name="chevron-down" size={16} color="#666" />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="Enter your mobile number"
+                value={mobileNumber}
+                onChangeText={(text) => {
+                  // Remove any spaces and non-numeric characters
+                  const cleanedText = text.replace(/[\s\D]/g, '');
+                  setMobileNumber(cleanedText);
+                }}
+                keyboardType="phone-pad"
+              />
+            </View>
           </>
         ) : (
           <>
@@ -514,7 +573,7 @@ export default function LoginScreen() {
           <View style={styles.otpModalContainer}>
             <ThemedText style={styles.otpTitle}>Verify your mobile number</ThemedText>
             <ThemedText style={styles.otpDescription}>
-              Enter the 6-digit code sent to {mobileNumber}
+              Enter the 6-digit code sent to {countryCode} {mobileNumber}
             </ThemedText>
 
             <View style={styles.otpInputContainer}>
@@ -561,6 +620,67 @@ export default function LoginScreen() {
 
             <TouchableOpacity onPress={handleCloseModal}>
               <ThemedText style={styles.cancelText}>Cancel</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Country Code Modal */}
+      <Modal
+        visible={showCountryCodeModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCountryCodeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.countryCodeModalContainer}>
+            <ThemedText style={styles.countryCodeTitle}>Select Country Code</ThemedText>
+            
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search country..."
+                value={searchQuery}
+                onChangeText={handleSearch}
+                autoFocus={true}
+              />
+            </View>
+            
+            <View style={styles.countryListContainer}>
+              {filteredCountryCodes.map((country) => (
+                <TouchableOpacity
+                  key={country.name}
+                  style={styles.countryItem}
+                  onPress={() => {
+                    setCountryCode(country.code);
+                    setShowCountryCodeModal(false);
+                    setSearchQuery('');
+                    setFilteredCountryCodes(countryCodes);
+                  }}
+                >
+                  <ThemedText style={styles.countryFlag}>{country.flag}</ThemedText>
+                  <ThemedText style={styles.countryName}>{country.name}</ThemedText>
+                  <ThemedText style={styles.countryCodeItemText}>{country.code}</ThemedText>
+                </TouchableOpacity>
+              ))}
+              
+              {filteredCountryCodes.length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <ThemedText style={styles.noResultsText}>No countries found</ThemedText>
+                </View>
+              )}
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => {
+                setShowCountryCodeModal(false);
+                setSearchQuery('');
+                setFilteredCountryCodes(countryCodes);
+              }}
+            >
+              <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -828,5 +948,125 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
     marginTop: 8,
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  countryCodeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 8,
+    marginRight: 8,
+    minWidth: 80,
+    justifyContent: 'space-between',
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: '#333',
+    marginRight: 4,
+  },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 8,
+    fontSize: 16,
+  },
+  countryCodeModalContainer: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    maxHeight: '80%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  countryCodeTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    height: 48,
+  },
+  countryListContainer: {
+    maxHeight: 350,
+    width: '100%',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  countryFlag: {
+    fontSize: 24,
+    marginRight: 12,
+    width: 32,
+    textAlign: 'center',
+  },
+  countryName: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  countryCodeItemText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+    width: 50,
+    textAlign: 'right',
+  },
+  cancelButton: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    width: '100%',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#666',
   },
 }); 
