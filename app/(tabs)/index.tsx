@@ -21,9 +21,14 @@ import {
   fetchTemplatesByCategory,
   fetchCategories,
 } from "@/src/features/template/templateThunks";
-import { fetchRecentTemplates, fetchWhatsNewTags, fetchTemplatesByTag, fetchHolidayTemplates } from "@/src/features/home/homeThunks";
+import {
+  fetchRecentTemplates,
+  fetchWhatsNewTags,
+  fetchTemplatesByTag,
+  fetchHolidayTemplates,
+} from "@/src/features/home/homeThunks";
 import { RootState } from "@/src/store";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Add more icons & categories data
 // const categoryData = [
@@ -105,8 +110,8 @@ const recentDesignsData = [
 
 // Add the toCamelCase function at the top of the file
 const toCamelCase = (str: string) => {
-  if (!str) return '';
-  
+  if (!str) return "";
+
   // Convert to camelCase and add spaces
   const withSpaces = str
     .split(/[-_\s]+/)
@@ -114,8 +119,8 @@ const toCamelCase = (str: string) => {
       // Always capitalize first letter of each word
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
-    .join(' ');
-  
+    .join(" ");
+
   return withSpaces;
 };
 
@@ -132,10 +137,7 @@ function WhatsNewCard({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity 
-      style={styles.whatsNewCard}
-      onPress={onPress}
-    >
+    <TouchableOpacity style={styles.whatsNewCard} onPress={onPress}>
       {/* Display the webp image from base64 */}
       <Image
         source={{ uri: `data:image/webp;base64,${webp}` }}
@@ -339,9 +341,7 @@ function CategoryIcon({
       <View style={[styles.categoryIconContainer, { backgroundColor: color }]}>
         <Ionicons name={icon as any} size={24} color="#fff" />
       </View>
-      <ThemedText style={styles.categoryName}>
-        {toCamelCase(name)}
-      </ThemedText>
+      <ThemedText style={styles.categoryName}>{toCamelCase(name)}</ThemedText>
     </TouchableOpacity>
   );
 }
@@ -396,15 +396,16 @@ function RecentDesignCard({
 }
 
 // First, let's update the ComingSoonCard component to support custom messages
-function ComingSoonCard({ title = "Coming Soon!", text = "New templates are on the way" }) {
+function ComingSoonCard({
+  title = "Coming Soon!",
+  text = "New templates are on the way",
+}) {
   return (
     <View style={styles.comingSoonCard}>
       <View style={styles.comingSoonContent}>
         <Ionicons name="time-outline" size={32} color="#8B3DFF" />
         <ThemedText style={styles.comingSoonTitle}>{title}</ThemedText>
-        <ThemedText style={styles.comingSoonText}>
-          {text}
-        </ThemedText>
+        <ThemedText style={styles.comingSoonText}>{text}</ThemedText>
       </View>
     </View>
   );
@@ -445,12 +446,14 @@ export default function HomeScreen() {
 
   // Add state to track current recent design index
   const [recentDesignIndex, setRecentDesignIndex] = useState(0);
+  // Add state for holiday index
+  const [holidayIndex, setHolidayIndex] = useState(0);
 
   // Fetch data when the component mounts
   useEffect(() => {
     if (isAuthenticated && !initialDataFetched) {
-      console.log('Fetching initial home data...');
-      
+      console.log("Fetching initial home data...");
+
       // Use Promise.all to fetch all data in parallel
       const fetchAllData = async () => {
         try {
@@ -458,40 +461,40 @@ export default function HomeScreen() {
             dispatch(fetchCategories()),
             dispatch(fetchRecentTemplates()),
             dispatch(fetchWhatsNewTags()),
-            dispatch(fetchHolidayTemplates())
+            dispatch(fetchHolidayTemplates()),
           ]);
-          
-          console.log('All initial data fetched successfully');
+
+          console.log("All initial data fetched successfully");
           setInitialDataFetched(true);
         } catch (error) {
-          console.error('Error fetching initial data:', error);
+          console.error("Error fetching initial data:", error);
         }
       };
-      
+
       fetchAllData();
     }
   }, [isAuthenticated, initialDataFetched, dispatch]);
 
   // Add new useEffect to log data changes
   useEffect(() => {
-    console.log('Recent templates updated:', {
+    console.log("Recent templates updated:", {
       count: recentTemplates?.length || 0,
       loading: loadingRecentTemplates,
-      error: recentTemplatesError
+      error: recentTemplatesError,
     });
-    
-    console.log('Holiday templates updated:', {
+
+    console.log("Holiday templates updated:", {
       count: holidayTemplates?.length || 0,
       loading: holidayLoading,
-      error: holidayError
+      error: holidayError,
     });
   }, [
-    recentTemplates, 
-    loadingRecentTemplates, 
+    recentTemplates,
+    loadingRecentTemplates,
     recentTemplatesError,
     holidayTemplates,
     holidayLoading,
-    holidayError
+    holidayError,
   ]);
 
   // Handle scroll events
@@ -515,39 +518,39 @@ export default function HomeScreen() {
     router.push(`/templateCategories?category=${categoryName}`);
   };
 
-  const {
-    whatsNewTags,
-    whatsNewTemplates,
-    whatsNewLoading,
-    whatsNewError
-  } = useSelector((state: RootState) => state.home);
+  const { whatsNewTags, whatsNewTemplates, whatsNewLoading, whatsNewError } =
+    useSelector((state: RootState) => state.home);
 
   const [currentWhatsNewIndex, setCurrentWhatsNewIndex] = useState(0);
 
   // Function to handle What's New tag group click - call search API here
-  const handleWhatsNewTagClick = (tagGroup: { id: string; label: string; tags: string[] }) => {
+  const handleWhatsNewTagClick = (tagGroup: {
+    id: string;
+    label: string;
+    tags: string[];
+  }) => {
     // Construct the query string from tags
-    const queryString = tagGroup.tags.join('&');
-    
+    const queryString = tagGroup.tags.join("&");
+
     // Navigate to activeTemplate page with the query string
     router.push({
-      pathname: '/activeTemplate',
-      params: { 
+      pathname: "/activeTemplate",
+      params: {
         query: queryString,
-        label: tagGroup.label 
-      }
+        label: tagGroup.label,
+      },
     });
   };
 
   // Prepare what's new data for display
   // Flatten all tag groups' templates and combine them for display
-  const whatsNewItems = whatsNewTags.flatMap(tagGroup => 
-    tagGroup.tags.flatMap(tag => 
-      (whatsNewTemplates[tag] || []).map(template => ({
+  const whatsNewItems = whatsNewTags.flatMap((tagGroup) =>
+    tagGroup.tags.flatMap((tag) =>
+      (whatsNewTemplates[tag] || []).map((template) => ({
         id: template.id,
         title: template.templateName,
         imageUrl: template.url,
-        description: template.description
+        description: template.description,
       }))
     )
   );
@@ -571,7 +574,7 @@ export default function HomeScreen() {
           />
           <View style={styles.heroTextContainer}>
             <ThemedText style={styles.heroText}>
-            What you want to Communicate today ?
+              What you want to Communicate today ?
             </ThemedText>
           </View>
         </View>
@@ -628,7 +631,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
           </View>
-          
+
           {whatsNewLoading ? (
             <ActivityIndicator size="large" color="#8B3DFF" />
           ) : whatsNewError ? (
@@ -653,14 +656,59 @@ export default function HomeScreen() {
                 onScroll={(event) => {
                   const scrollX = event.nativeEvent.contentOffset.x;
                   const itemWidth = 182; // card width (170) + margin (12)
-                  const currentIndex = Math.round(scrollX / itemWidth);
-                  setCurrentWhatsNewIndex(currentIndex < whatsNewTags.length ? currentIndex : 0);
+                  const totalItems = whatsNewTags.length;
+
+                  // Get the current index considering the infinite scrolling
+                  let index = Math.round(scrollX / itemWidth) % totalItems;
+                  if (index < 0) index += totalItems;
+
+                  setCurrentWhatsNewIndex(index);
+
+                  // Check if we've scrolled to the duplicate section and need to loop back
+                  if (scrollX >= itemWidth * totalItems) {
+                    // Silently scroll back to the original set
+                    const scrollViewRef = event.target as any;
+                    scrollViewRef?.scrollTo({
+                      x: scrollX % (itemWidth * totalItems),
+                      animated: false,
+                    });
+                  } else if (scrollX < 0) {
+                    // Scroll to the end of the original set
+                    const scrollViewRef = event.target as any;
+                    scrollViewRef?.scrollTo({
+                      x: itemWidth * totalItems + scrollX,
+                      animated: false,
+                    });
+                  }
                 }}
                 scrollEventThrottle={16}
               >
+                {/* Prepend with the last few items for looping backwards */}
+                {whatsNewTags.slice(-3).map((tagGroup, index) => (
+                  <WhatsNewCard
+                    key={`prepend-${tagGroup.id}-${index}`}
+                    label={tagGroup.label}
+                    webp={tagGroup.webp}
+                    tags={tagGroup.tags}
+                    onPress={() => handleWhatsNewTagClick(tagGroup)}
+                  />
+                ))}
+
+                {/* Original items */}
                 {whatsNewTags.map((tagGroup, index) => (
                   <WhatsNewCard
                     key={`${tagGroup.id}-${index}`}
+                    label={tagGroup.label}
+                    webp={tagGroup.webp}
+                    tags={tagGroup.tags}
+                    onPress={() => handleWhatsNewTagClick(tagGroup)}
+                  />
+                ))}
+
+                {/* Append with the first few items for looping forwards */}
+                {whatsNewTags.slice(0, 3).map((tagGroup, index) => (
+                  <WhatsNewCard
+                    key={`append-${tagGroup.id}-${index}`}
                     label={tagGroup.label}
                     webp={tagGroup.webp}
                     tags={tagGroup.tags}
@@ -676,7 +724,9 @@ export default function HomeScreen() {
                       styles.dot,
                       {
                         backgroundColor:
-                          currentWhatsNewIndex === index ? "#8B3DFF" : "#D8D8D8",
+                          currentWhatsNewIndex === index
+                            ? "#8B3DFF"
+                            : "#D8D8D8",
                       },
                     ]}
                   />
@@ -714,9 +764,9 @@ export default function HomeScreen() {
               style={styles.recentDesignsScroll}
               contentContainerStyle={styles.recentDesignsScrollContent}
             >
-              <ComingSoonCard 
-                title="No Recent Templates" 
-                text="You haven't created any templates yet" 
+              <ComingSoonCard
+                title="No Recent Templates"
+                text="You haven't created any templates yet"
               />
             </ScrollView>
           ) : (
@@ -727,19 +777,66 @@ export default function HomeScreen() {
                 style={styles.recentDesignsScroll}
                 contentContainerStyle={styles.recentDesignsScrollContent}
                 onScroll={(event) => {
-                  // Add scroll handler to update active dot
                   const scrollX = event.nativeEvent.contentOffset.x;
-                  const itemWidth = 272; // card width (260) + margin (12)
-                  const currentIndex = Math.round(scrollX / itemWidth);
-                  setRecentDesignIndex(currentIndex);
+                  const itemWidth = 182; // card width (170) + margin (12)
+                  const visibleTemplates = recentTemplates.slice(0, 5);
+                  const totalItems = visibleTemplates.length;
+
+                  // Get the current index considering the infinite scrolling
+                  let index = Math.round(scrollX / itemWidth) % totalItems;
+                  if (index < 0) index += totalItems;
+
+                  setRecentDesignIndex(index);
+
+                  // Check if we've scrolled to the duplicate section and need to loop back
+                  if (scrollX >= itemWidth * totalItems) {
+                    // Silently scroll back to the original set
+                    const scrollViewRef = event.target as any;
+                    scrollViewRef?.scrollTo({
+                      x: scrollX % (itemWidth * totalItems),
+                      animated: false,
+                    });
+                  } else if (scrollX < 0) {
+                    // Scroll to the end of the original set
+                    const scrollViewRef = event.target as any;
+                    scrollViewRef?.scrollTo({
+                      x: itemWidth * totalItems + scrollX,
+                      animated: false,
+                    });
+                  }
                 }}
                 scrollEventThrottle={16}
                 pagingEnabled
               >
-                {console.log('Rendering recent templates:', recentTemplates.slice(0, 5).map(t => t.id))}
+                {/* Prepend with the last few items for looping backwards */}
+                {recentTemplates
+                  .slice(-3)
+                  .slice(0, 5)
+                  .map((template) => (
+                    <RecentDesignCard
+                      key={`prepend-${template.id}`}
+                      id={template.id}
+                      title={template.templateName || "Untitled Template"}
+                      description={template.description || "Design"}
+                      imageUrl={template.url}
+                    />
+                  ))}
+
+                {/* Original items */}
                 {recentTemplates.slice(0, 5).map((template) => (
                   <RecentDesignCard
                     key={template.id}
+                    id={template.id}
+                    title={template.templateName || "Untitled Template"}
+                    description={template.description || "Design"}
+                    imageUrl={template.url}
+                  />
+                ))}
+
+                {/* Append with the first few items for looping forwards */}
+                {recentTemplates.slice(0, 3).map((template) => (
+                  <RecentDesignCard
+                    key={`append-${template.id}`}
                     id={template.id}
                     title={template.templateName || "Untitled Template"}
                     description={template.description || "Design"}
@@ -768,7 +865,9 @@ export default function HomeScreen() {
         {/* Holidays section - similar update as above */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Holidays template</ThemedText>
+            <ThemedText style={styles.sectionTitle}>
+              Holidays template
+            </ThemedText>
             {holidayTemplates?.length > 0 && (
               <TouchableOpacity onPress={() => router.push("/holiday")}>
                 <ThemedText style={styles.seeAll}>See all</ThemedText>
@@ -783,9 +882,7 @@ export default function HomeScreen() {
               style={{ marginTop: 10 }}
             />
           ) : holidayError ? (
-            <ThemedText style={styles.errorText}>
-              {holidayError}
-            </ThemedText>
+            <ThemedText style={styles.errorText}>{holidayError}</ThemedText>
           ) : !holidayTemplates || holidayTemplates.length === 0 ? (
             <ScrollView
               horizontal
@@ -803,11 +900,67 @@ export default function HomeScreen() {
                 style={styles.recentDesignsScroll}
                 contentContainerStyle={styles.recentDesignsScrollContent}
                 pagingEnabled
+                onScroll={(event) => {
+                  const scrollX = event.nativeEvent.contentOffset.x;
+                  const itemWidth = 182; // card width (170) + margin (12)
+                  const visibleTemplates = holidayTemplates.slice(0, 5);
+                  const totalItems = visibleTemplates.length;
+
+                  // Get the current index considering the infinite scrolling
+                  let index = Math.round(scrollX / itemWidth) % totalItems;
+                  if (index < 0) index += totalItems;
+
+                  // Update a state for the holiday section (need to add this state)
+                  setHolidayIndex(index);
+
+                  // Check if we've scrolled to the duplicate section and need to loop back
+                  if (scrollX >= itemWidth * totalItems) {
+                    // Silently scroll back to the original set
+                    const scrollViewRef = event.target as any;
+                    scrollViewRef?.scrollTo({
+                      x: scrollX % (itemWidth * totalItems),
+                      animated: false,
+                    });
+                  } else if (scrollX < 0) {
+                    // Scroll to the end of the original set
+                    const scrollViewRef = event.target as any;
+                    scrollViewRef?.scrollTo({
+                      x: itemWidth * totalItems + scrollX,
+                      animated: false,
+                    });
+                  }
+                }}
+                scrollEventThrottle={16}
               >
-                {console.log('Rendering holiday templates:', holidayTemplates.slice(0, 5).map(t => t.id))}
+                {/* Prepend with the last few items for looping backwards */}
+                {holidayTemplates
+                  .slice(-3)
+                  .slice(0, 5)
+                  .map((template) => (
+                    <RecentDesignCard
+                      key={`prepend-${template.id}`}
+                      id={template.id}
+                      title={template.templateName || "Untitled Template"}
+                      description={template.description || "Holiday Design"}
+                      imageUrl={template.url}
+                    />
+                  ))}
+
+                {/* Original items */}
                 {holidayTemplates.slice(0, 5).map((template) => (
                   <RecentDesignCard
                     key={template.id}
+                    id={template.id}
+                    title={template.templateName || "Untitled Template"}
+                    description={template.description || "Holiday Design"}
+                    imageUrl={template.url}
+                  />
+                ))}
+
+                {/* Append with the first few items for looping forwards */}
+                {holidayTemplates.slice(0, 3).map((template) => (
+                  <RecentDesignCard
+                    key={`append-${template.id}`}
                     id={template.id}
                     title={template.templateName || "Untitled Template"}
                     description={template.description || "Holiday Design"}
@@ -823,7 +976,8 @@ export default function HomeScreen() {
                       style={[
                         styles.dot,
                         {
-                          backgroundColor: 0 === index ? "#8B3DFF" : "#D8D8D8",
+                          backgroundColor:
+                            holidayIndex === index ? "#8B3DFF" : "#D8D8D8",
                         },
                       ]}
                     />
@@ -904,10 +1058,10 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 11,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 5,
-    width: '100%', // Ensure text has enough space
-    flexWrap: 'wrap' // Allow text to wrap if needed
+    width: "100%", // Ensure text has enough space
+    flexWrap: "wrap", // Allow text to wrap if needed
   },
   aiFeaturesSection: {
     marginBottom: 24,
@@ -1152,14 +1306,14 @@ const styles = StyleSheet.create({
   comingSoonCard: {
     width: 170,
     height: 150,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     borderRadius: 12,
     marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
@@ -1167,21 +1321,21 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   comingSoonContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 16,
   },
   comingSoonTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#8B3DFF',
+    fontWeight: "bold",
+    color: "#8B3DFF",
     marginTop: 8,
     marginBottom: 4,
   },
   comingSoonText: {
     fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     lineHeight: 16,
   },
 });
