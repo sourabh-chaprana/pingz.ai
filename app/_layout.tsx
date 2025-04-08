@@ -43,7 +43,7 @@ import { searchTemplates } from "@/src/features/search/searchThunks";
 import { clearSearch } from "@/src/features/search/searchSlice";
 import SearchResults from "@/app/SearchResult";
 import { logoutUser, setTokens } from "@/src/features/auth/authSlice";
-import { Slot } from 'expo-router';
+import { Slot } from "expo-router";
 import { performLogout } from "@/src/services/api";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -60,10 +60,9 @@ const ScrollContext = React.createContext<{
 export const ScrollProvider = ScrollContext.Provider;
 export const useScrollContext = () => React.useContext(ScrollContext);
 
-
 const toCamelCase = (str: string) => {
-  if (!str) return '';
-  
+  if (!str) return "";
+
   // Convert to camelCase and add spaces
   const withSpaces = str
     .split(/[-_\s]+/)
@@ -71,11 +70,10 @@ const toCamelCase = (str: string) => {
       // Always capitalize first letter of each word
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
-    .join(' ');
-  
+    .join(" ");
+
   return withSpaces;
 };
-
 
 // Custom splash screen component
 function CustomSplashScreen() {
@@ -132,7 +130,7 @@ function RecentDesignsSection({ navigation }: { navigation: any }) {
       </TouchableOpacity>
 
       {expanded && (
-        <ScrollView 
+        <ScrollView
           style={styles.recentDesignsList}
           showsVerticalScrollIndicator={true}
         >
@@ -185,21 +183,21 @@ function CustomDrawerContent(props: any) {
     try {
       // Use the centralized logout function
       await performLogout();
-      
+
       // Explicitly navigate to login screen
-      router.replace('/login');
+      router.replace("/login");
 
       // Show success message
       Toast.show({
-        type: 'success',
-        text1: 'Logged out successfully',
+        type: "success",
+        text1: "Logged out successfully",
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to logout. Please try again.',
+        type: "error",
+        text1: "Error",
+        text2: "Failed to logout. Please try again.",
       });
     }
   };
@@ -242,7 +240,7 @@ function CustomDrawerContent(props: any) {
       )}
 
       {/* Fixed logout section at bottom */}
-      <View style={{ marginTop: 'auto' }}>
+      <View style={{ marginTop: "auto" }}>
         <View style={styles.divider} />
         <MenuItem
           icon="log-out-outline"
@@ -455,8 +453,10 @@ function AppContent() {
   const router = useRouter();
   const dispatch = useDispatch();
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
+
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -465,13 +465,13 @@ function AppContent() {
   // Define checkAuthAndRedirect with router as parameter
   const checkAuthAndRedirect = async () => {
     try {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (!token && router.pathname !== '/login') {
-        router.push('/login');
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token && router.pathname !== "/login") {
+        router.push("/login");
       }
     } catch (error) {
-      console.error('Error checking authentication:', error);
-      router.push('/login');
+      console.error("Error checking authentication:", error);
+      router.push("/login");
     }
   };
 
@@ -480,8 +480,8 @@ function AppContent() {
     async function prepare() {
       try {
         if (loaded) {
-          const token = await AsyncStorage.getItem('auth_token');
-          const refreshToken = await AsyncStorage.getItem('refreshToken');
+          const token = await AsyncStorage.getItem("auth_token");
+          const refreshToken = await AsyncStorage.getItem("refreshToken");
 
           if (token) {
             dispatch(setTokens({ token, refreshToken }));
@@ -509,11 +509,11 @@ function AppContent() {
   useFocusEffect(
     React.useCallback(() => {
       const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
+        "hardwareBackPress",
         async () => {
-          const token = await AsyncStorage.getItem('auth_token');
+          const token = await AsyncStorage.getItem("auth_token");
           if (!token) {
-            router.push('/login');
+            router.push("/login");
             return true;
           }
           return false;
@@ -558,9 +558,9 @@ function DrawerNavigator() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (!token && router.pathname !== '/login') {
-        router.push('/login');
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token && router.pathname !== "/login") {
+        router.push("/login");
       }
     };
 
@@ -568,59 +568,173 @@ function DrawerNavigator() {
   }, [isAuthenticated, router]);
 
   return (
-    <Drawer
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={({ navigation }) => ({
-        headerShown: isAuthenticated,
-        header: () => isAuthenticated ? <SearchHeader navigation={navigation} /> : null,
-        headerStyle: {
-          backgroundColor: "transparent",
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: "#333",
-        drawerStyle: {
-          backgroundColor: "#fff",
-        },
-        drawerActiveBackgroundColor: "#f0e6ff",
-        drawerActiveTintColor: "#8B3DFF",
-        swipeEnabled: isAuthenticated,
-      })}
-    >
-      <Drawer.Screen
-        name="(tabs)"
-        options={{
-          title: "Home",
-        }}
-      />
-      <Drawer.Screen name="login" options={{ 
-        title: "Login",
-        drawerItemStyle: { display: 'none' },
-        swipeEnabled: false,
-      }} />
-      {isAuthenticated && (
-        <>
-          <Drawer.Screen name="brand" options={{ title: "Brand" }} />
-          <Drawer.Screen name="apps" options={{ title: "Apps" }} />
-          <Drawer.Screen name="myTemplates" options={{ title: "My Templates" }} />
-      
-          <Drawer.Screen
-            name="template-editor/[id]"
-            options={{
-              title: "Template Editor",
-              drawerItemStyle: { display: "none" },
-            }}
+    <>
+      <Drawer
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        screenOptions={({ navigation }) => ({
+          headerShown: isAuthenticated,
+          header: () =>
+            isAuthenticated ? <SearchHeader navigation={navigation} /> : null,
+          headerStyle: {
+            backgroundColor: "transparent",
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTintColor: "#333",
+          drawerStyle: {
+            backgroundColor: "#fff",
+          },
+          drawerActiveBackgroundColor: "#f0e6ff",
+          drawerActiveTintColor: "#8B3DFF",
+          swipeEnabled: isAuthenticated,
+        })}
+      >
+        <Drawer.Screen
+          name="(tabs)"
+          options={{
+            title: "Home",
+          }}
+        />
+        <Drawer.Screen
+          name="login"
+          options={{
+            title: "Login",
+            drawerItemStyle: { display: "none" },
+            swipeEnabled: false,
+          }}
+        />
+        {isAuthenticated && (
+          <>
+            <Drawer.Screen name="brand" options={{ title: "Brand" }} />
+            <Drawer.Screen name="apps" options={{ title: "Apps" }} />
+            <Drawer.Screen
+              name="myTemplates"
+              options={{ title: "My Templates" }}
+            />
+            <Drawer.Screen
+              name="transaction"
+              options={{ title: "Transactions" }}
+            />
+            <Drawer.Screen name="whatsNew" options={{ title: "What's New" }} />
+            <Drawer.Screen
+              name="template-editor/[id]"
+              options={{
+                title: "Template Editor",
+                drawerItemStyle: { display: "none" },
+              }}
+            />
+          </>
+        )}
+      </Drawer>
+
+      {/* Add the global tab bar here */}
+      {isAuthenticated && router.pathname !== "/login" && <GlobalTabBar />}
+    </>
+  );
+}
+
+// Add this new component for the global tab bar
+function GlobalTabBar() {
+  const router = useRouter();
+
+  return (
+    <View style={tabStyles.container}>
+      <TouchableOpacity
+        style={tabStyles.tabItem}
+        onPress={() => router.push("/(tabs)")}
+      >
+        <Ionicons
+          name="home-outline"
+          size={24}
+          color={router.pathname === "/(tabs)" ? "#8B3DFF" : "#666"}
+        />
+        <ThemedText
+          style={[
+            tabStyles.tabLabel,
+            router.pathname === "/(tabs)" && tabStyles.activeTabLabel,
+          ]}
+        >
+          Home
+        </ThemedText>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={tabStyles.tabItem}
+        onPress={() => router.push("/(tabs)/projects")}
+      >
+        <Ionicons
+          name="folder-outline"
+          size={24}
+          color={router.pathname === "/(tabs)/projects" ? "#8B3DFF" : "#666"}
+        />
+        <ThemedText
+          style={[
+            tabStyles.tabLabel,
+            router.pathname === "/(tabs)/projects" && tabStyles.activeTabLabel,
+          ]}
+        >
+          Projects
+        </ThemedText>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={tabStyles.centerTabItem}
+        onPress={() => router.push("/(tabs)/create")}
+      >
+        <View style={tabStyles.centerButton}>
+          <Image
+            source={require("../assets/images/pingz.png")}
+            style={{ width: 36, height: 36 }}
+            resizeMode="contain"
           />
-        </>
-      )}
-    </Drawer>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={tabStyles.tabItem}
+        onPress={() => router.push("/(tabs)/templates")}
+      >
+        <Ionicons
+          name="grid-outline"
+          size={24}
+          color={router.pathname === "/(tabs)/templates" ? "#8B3DFF" : "#666"}
+        />
+        <ThemedText
+          style={[
+            tabStyles.tabLabel,
+            router.pathname === "/(tabs)/templates" && tabStyles.activeTabLabel,
+          ]}
+        >
+          Templates
+        </ThemedText>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={tabStyles.tabItem}
+        onPress={() => router.push("/(tabs)/pro")}
+      >
+        <Ionicons
+          name="star-outline"
+          size={24}
+          color={router.pathname === "/(tabs)/pro" ? "#8B3DFF" : "#666"}
+        />
+        <ThemedText
+          style={[
+            tabStyles.tabLabel,
+            router.pathname === "/(tabs)/pro" && tabStyles.activeTabLabel,
+          ]}
+        >
+          Pro
+        </ThemedText>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 // Export the wrapper component
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  
+
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -696,7 +810,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: "#e0e0e0",
     paddingVertical: 12,
   },
 });
@@ -815,5 +929,49 @@ const searchStyles = StyleSheet.create({
   },
   clearButton: {
     padding: 8,
+  },
+});
+
+// Add these styles at the bottom of your file
+const tabStyles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    height: 60,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingBottom: 8,
+    paddingTop: 8,
+    ...createElevation(5),
+  },
+  tabItem: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  centerTabItem: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  centerButton: {
+    width: 56,
+    height: 56,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#FF4785",
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: -30,
+    ...createElevation(5),
+  },
+  tabLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
+  },
+  activeTabLabel: {
+    color: "#8B3DFF",
   },
 });
