@@ -398,10 +398,6 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
 
-        {error && (
-          <ThemedText style={styles.error}>{error}</ThemedText>
-        )}
-
         <ThemedText style={styles.inputLabel}>Full Name</ThemedText>
         <TextInput
           style={styles.input}
