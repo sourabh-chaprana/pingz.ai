@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "platforms": ["ios", "android", "web"],
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/pingz.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,8 +14,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/pingz.png",
+        "backgroundColor": "#FFFFFF",
+        "foregroundImageScale": "contain"
       },
       "permissions": ["INTERNET"],
       "package": "com.yourcompany.pingz",
