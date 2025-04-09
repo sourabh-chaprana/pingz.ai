@@ -45,6 +45,9 @@ import SearchResults from "@/app/SearchResult";
 import { logoutUser, setTokens } from "@/src/features/auth/authSlice";
 import { Slot } from "expo-router";
 import { performLogout } from "@/src/services/api";
+import { fetchHolidayTemplates } from "@/src/features/home/homeThunks";
+import { fetchWhatsNewTags } from "@/src/features/home/homeThunks";
+import { fetchCategories } from "@/src/features/home/homeThunks";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -453,14 +456,23 @@ function AppContent() {
   const router = useRouter();
   const dispatch = useDispatch();
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
   const [isAppReady, setIsAppReady] = useState(false);
+
+  // Add this effect to trigger API calls when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Fetch initial data
+      dispatch(fetchHolidayTemplates());
+      dispatch(fetchWhatsNewTags());
+      dispatch(fetchRecentTemplates());
+      dispatch(fetchRecentTemplates());
+    }
+  }, [isAuthenticated, dispatch]);
 
   // Define checkAuthAndRedirect with router as parameter
   const checkAuthAndRedirect = async () => {

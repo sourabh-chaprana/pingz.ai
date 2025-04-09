@@ -128,9 +128,22 @@ const authSlice = createSlice({
           state.error = null;
         })
         .addCase(verifyOtp.fulfilled, (state, action) => {
-          state.otpVerificationLoading = false;
-          // No need to set tokens or authenticate
-          console.log('OTP verification successful');
+          if (action.payload.idToken) {
+            state.token = action.payload.idToken;
+            state.refreshToken = action.payload.refreshToken;
+            state.isAuthenticated = true;
+            
+            // Extract user data from token
+            const tokenData = decodeToken(action.payload.idToken);
+            if (tokenData) {
+              state.user = {
+                id: tokenData.userId || tokenData.sub,
+                email: tokenData.email,
+                name: tokenData.name,
+                userType: tokenData.userType
+              };
+            }
+          }
         })
         .addCase(verifyOtp.rejected, (state, action) => {
           state.otpVerificationLoading = false;
