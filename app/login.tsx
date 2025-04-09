@@ -59,7 +59,7 @@ export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [useMobile, setUseMobile] = useState(false);
+  const [useMobile, setUseMobile] = useState(true);
   
   // OTP related states
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -447,7 +447,7 @@ export default function LoginScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.card}>
-        <ThemedText style={styles.title}>Login to your account</ThemedText>
+        <ThemedText style={styles.title}>Login to Pingz</ThemedText>
         
         <View style={styles.loginLinkContainer}>
           <ThemedText style={styles.loginLinkText}>Don't have an account? </ThemedText>
@@ -552,12 +552,6 @@ export default function LoginScreen() {
             disabled={!googleRequest}
           >
             <FontAwesome name="google" size={22} color="#DB4437" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="apple" size={22} color="#000000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="facebook" size={22} color="#4267B2" />
           </TouchableOpacity>
         </View>
       </View>
