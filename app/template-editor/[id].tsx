@@ -35,6 +35,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { fetchUserData } from '@/src/features/accounts/accountsThunk';
+import * as ImagePicker from 'expo-image-picker';
 
 // Update the toCamelCase function to ensure first letter is always capitalized
 const toCamelCase = (str: string) => {
@@ -199,8 +200,107 @@ export default function TemplateEditor() {
     }
   };
 
-  // Image field renderer
-  const renderImageField = (variable: string) => {
+  // Add this function to handle camera capture
+  const handleCameraCapture = async () => {
+    try {
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({
+          type: 'error',
+          text1: 'Permission Required',
+          text2: 'Please grant camera permissions to take photos',
+          position: 'bottom',
+        });
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        handleImageSelect(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Camera Error',
+        text2: 'Failed to capture photo',
+        position: 'bottom',
+      });
+    }
+  };
+
+  // Update the renderImageField function
+  const renderImageField = (variable: string, type: string = 'text') => {
+    // Handle photo type inputs
+    if (type.toLowerCase() === 'photo' || variable.toLowerCase() === 'photo') {
+      return (
+        <View style={styles.imageFieldContainer}>
+          {selectedImage ? (
+            <View style={styles.selectedImageContainer}>
+              <Image 
+                source={{ uri: selectedImage }} 
+                style={styles.selectedImage} 
+                resizeMode="cover"
+              />
+              <View style={styles.imageActions}>
+                <TouchableOpacity 
+                  style={styles.imageActionButton} 
+                  onPress={handleSelectMedia}
+                >
+                  <Ionicons name="images-outline" size={20} color="#8B3DFF" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.imageActionButton} 
+                  onPress={handleCameraCapture}
+                >
+                  <Ionicons name="camera-outline" size={20} color="#8B3DFF" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.imageActionButton, styles.deleteButton]} 
+                  onPress={handleDeleteImage}
+                >
+                  <Ionicons name="trash" size={20} color="#FF4444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.photoUploadContainer}>
+              <TouchableOpacity 
+                style={styles.uploadButton}
+                onPress={handleSelectMedia}
+              >
+                <Ionicons name="images-outline" size={24} color="#8B3DFF" />
+                <ThemedText style={styles.uploadButtonText}>Choose from Gallery</ThemedText>
+              </TouchableOpacity>
+              
+              <View style={styles.orDivider}>
+                <View style={styles.dividerLine} />
+                <ThemedText style={styles.orText}>OR</ThemedText>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity 
+                style={styles.uploadButton}
+                onPress={handleCameraCapture}
+              >
+                <Ionicons name="camera-outline" size={24} color="#8B3DFF" />
+                <ThemedText style={styles.uploadButtonText}>Take Photo</ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      );
+    }
+    
+    // Handle image type (existing media library functionality)
     if (variable.toLowerCase() === 'image') {
       return (
         <View style={styles.imageFieldContainer}>
@@ -239,6 +339,7 @@ export default function TemplateEditor() {
       );
     }
     
+    // Default text input
     return (
       <TextInput
         style={styles.formInput}
@@ -855,7 +956,7 @@ export default function TemplateEditor() {
           {currentTemplate.templateVariables?.map((variable, index) => (
             <View key={index} style={styles.formGroup}>
               <ThemedText style={styles.formLabel}>{toCamelCase(variable.name)}</ThemedText>
-              {renderImageField(variable.name)}
+              {renderImageField(variable.name, variable.type)}
             </View>
           ))}
           
@@ -1369,5 +1470,45 @@ const styles = StyleSheet.create({
     minHeight: 80,
     marginTop: 'auto',
     paddingTop: 10,
+  },
+  photoUploadContainer: {
+    backgroundColor: '#f5f7fa',
+    borderWidth: 1,
+    borderColor: '#e0e4e8',
+    borderRadius: 8,
+    padding: 16,
+    minHeight: 200,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e4e8',
+    marginVertical: 8,
+  },
+  uploadButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#8B3DFF',
+    fontWeight: '500',
+  },
+  orDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e4e8',
+  },
+  orText: {
+    marginHorizontal: 16,
+    color: '#666',
+    fontSize: 14,
   },
 }); 
