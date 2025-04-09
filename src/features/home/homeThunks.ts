@@ -66,7 +66,7 @@ export const fetchWhatsNewTags = createAsyncThunk<
   { rejectValue: string }
 >("home/fetchWhatsNewTags", async (_, { rejectWithValue }) => {
   try {
-    const token = await AsyncStorage.getItem('token');
+    const token = await AsyncStorage.getItem('auth_token');
     const response = await api.get('/template/whats-new/active', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -83,7 +83,7 @@ export const fetchTemplatesByTag = createAsyncThunk<
   { rejectValue: string }
 >("home/fetchTemplatesByTag", async (tag, { rejectWithValue }) => {
   try {
-    const token = await AsyncStorage.getItem('token');
+    const token = await AsyncStorage.getItem('auth_token');
     const response = await api.get(`/template/search?query=${tag}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
