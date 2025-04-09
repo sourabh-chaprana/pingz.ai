@@ -127,7 +127,7 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem('auth_token');
       
       if (!token) {
         return null;
@@ -140,7 +140,7 @@ export const logout = createAsyncThunk(
       });
       
       // Clear tokens
-      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('refreshToken');
       
       return response.data;
@@ -166,7 +166,7 @@ export const refreshToken = createAsyncThunk(
       
       // Update tokens
       if (response.data.idToken) {
-        await AsyncStorage.setItem('token', response.data.idToken);
+        await AsyncStorage.setItem('auth_token', response.data.idToken);
         await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
       }
       
