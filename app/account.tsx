@@ -76,7 +76,7 @@ export default function AccountScreen() {
   const [footerFile, setFooterFile] = useState<File | null>(null);
 
   // Add state for section collapse
-  const [expandedSection, setExpandedSection] = useState<string>('personal');
+  const [expandedSection, setExpandedSection] = useState<string>('');
   
   // Add state for showing/hiding calendar
   const [showDobCalendar, setShowDobCalendar] = useState(false);
