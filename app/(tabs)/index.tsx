@@ -74,14 +74,6 @@ const whatsNewData = [
   },
 ];
 
-// Add more AI features data
-const aiFeatureData = [
-  { id: "1", text: "Make me an image", icon: "help-circle" },
-  { id: "2", text: "Write my first draft", icon: "create" },
-  { id: "3", text: "Design a logo", icon: "color-palette" },
-  { id: "4", text: "Create a presentation", icon: "easel" },
-  { id: "5", text: "Edit my photo", icon: "image" },
-];
 
 // Add recent designs data
 const recentDesignsData = [

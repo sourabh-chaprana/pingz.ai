@@ -45,6 +45,10 @@ import SearchResults from "@/app/SearchResult";
 import { logoutUser, setTokens } from "@/src/features/auth/authSlice";
 import { Slot } from "expo-router";
 import { performLogout } from "@/src/services/api";
+import { fetchHolidayTemplates } from "@/src/features/home/homeThunks";
+import { fetchWhatsNewTags } from "@/src/features/home/homeThunks";
+import { fetchCategories } from "@/src/features/home/homeThunks";
+import { Buffer } from 'buffer';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -172,12 +176,25 @@ function RecentDesignsSection({ navigation }: { navigation: any }) {
   );
 }
 
+// Add this interface for the token payload
+interface TokenPayload {
+  name: string;
+  userType: string;
+  membership: string;
+  userId: string;
+  email: string;
+  sub: string;
+  iat: number;
+  exp: number;
+}
+
 function CustomDrawerContent(props: any) {
   const isAuthenticated = useSelector((state: RootState) =>
     Boolean(state.auth.token)
   );
   const dispatch = useDispatch();
   const router = useRouter();
+  const [isPro, setIsPro] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -202,6 +219,26 @@ function CustomDrawerContent(props: any) {
     }
   };
 
+  // Add this useEffect to check the token when component mounts
+  useEffect(() => {
+    const checkMembership = async () => {
+      try {
+        const token = await AsyncStorage.getItem('auth_token');
+        if (token) {
+          // Manual JWT decoding
+          const payload = token.split('.')[1];
+          const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
+          setIsPro(decoded.membership === 'PRO');
+        }
+      } catch (error) {
+        console.error('Error checking membership:', error);
+        setIsPro(false);
+      }
+    };
+
+    checkMembership();
+  }, []);
+
   return (
     <View style={{ flex: 1 }}>
       {/* Fixed content */}
@@ -211,21 +248,24 @@ function CustomDrawerContent(props: any) {
         label="Home"
         onPress={() => props.navigation.navigate("(tabs)")}
       />
-      <MenuItem
+      {/* <MenuItem
         icon="bulb-outline"
         label="My Templates"
         onPress={() => props.navigation.navigate("myTemplates")}
-      />
+      /> */}
       {/* <MenuItem
         icon="help-circle-outline"
         label="Ask Canva"
         onPress={() => props.navigation.navigate("ask")}
       /> */}
-      <MenuItem
-        icon="list-outline"
-        label="Transactions"
-        onPress={() => props.navigation.navigate("transaction")}
-      />
+      {/* Only show Transaction menu if user is PRO */}
+      {isPro && (
+        <MenuItem
+          icon="list-outline"
+          label="Transactions"
+          onPress={() => props.navigation.navigate("transaction")}
+        />
+      )}
       <MenuItem
         icon="help-circle-outline"
         label="Account"
@@ -453,14 +493,23 @@ function AppContent() {
   const router = useRouter();
   const dispatch = useDispatch();
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
   const [isAppReady, setIsAppReady] = useState(false);
+
+  // Add this effect to trigger API calls when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Fetch initial data
+      dispatch(fetchHolidayTemplates());
+      dispatch(fetchWhatsNewTags());
+      dispatch(fetchRecentTemplates());
+      // dispatch(fetchRecentTemplates());
+    }
+  }, [isAuthenticated, dispatch]);
 
   // Define checkAuthAndRedirect with router as parameter
   const checkAuthAndRedirect = async () => {
@@ -658,7 +707,7 @@ function GlobalTabBar() {
         </ThemedText>
       </TouchableOpacity>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={tabStyles.tabItem}
         onPress={() => router.push("/(tabs)/projects")}
       >
@@ -675,7 +724,7 @@ function GlobalTabBar() {
         >
           Projects
         </ThemedText>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <TouchableOpacity
         style={tabStyles.centerTabItem}
@@ -690,7 +739,7 @@ function GlobalTabBar() {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={tabStyles.tabItem}
         onPress={() => router.push("/(tabs)/templates")}
       >
@@ -707,7 +756,7 @@ function GlobalTabBar() {
         >
           Templates
         </ThemedText>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <TouchableOpacity
         style={tabStyles.tabItem}

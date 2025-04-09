@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setTokens } from '../../features/auth/authSlice';
 
 interface LoginCredentials {
   email: string;
@@ -37,12 +38,25 @@ export const login = createAsyncThunk<LoginResponse, LoginCredentials>(
   '/user/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await api.post('/user/login', credentials);
-      // Store token immediately using AsyncStorage
-      if (response.data.idToken) {
-        await AsyncStorage.setItem('token', response.data.idToken);
-        await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
+      // Check if we already have a valid token
+      const existingToken = await AsyncStorage.getItem('auth_token');
+      if (existingToken && !credentials.otp) {
+        // If we have a token and this isn't an OTP verification, return early
+        return { 
+          idToken: existingToken,
+          refreshToken: await AsyncStorage.getItem('refreshToken'),
+          message: 'Auto login successful'
+        };
       }
+
+      const response = await api.post('/user/login', credentials);
+      
+      // Only store tokens if this is an OTP verification or email login
+      if (response.data.idToken) {
+        await AsyncStorage.setItem('auth_token', response.data.idToken);
+        await AsyncStorage.setItem('refreshToken', response.data.refreshToken || '');
+      }
+      
       return response.data;
     } catch (error: any) {
       console.error('Login error:', error);
@@ -67,14 +81,27 @@ export const register = createAsyncThunk<LoginResponse, RegisterCredentials>(
 
 export const verifyOtp = createAsyncThunk<any, VerifyOtpCredentials>(
   'auth/verifyOtp',
-  async (credentials, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue, dispatch }) => {
     try {
       console.log('Verifying OTP with credentials:', credentials);
       const response = await api.post('/user/signUp/confirm', credentials);
       console.log('OTP verification response:', response.data);
       
-      // Simply return success, no token handling
-      return { success: true };
+      // If verification is successful and we have tokens, store them
+      if (response.data.idToken) {
+        await AsyncStorage.setItem('auth_token', response.data.idToken);
+        if (response.data.refreshToken) {
+          await AsyncStorage.setItem('refreshToken', response.data.refreshToken);
+        }
+        
+        // Update Redux store with tokens
+        dispatch(setTokens({
+          token: response.data.idToken,
+          refreshToken: response.data.refreshToken
+        }));
+      }
+      
+      return response.data;
     } catch (error: any) {
       console.error('OTP verification error:', error);
       const errorMessage = error.response?.data?.message || 'OTP verification failed';

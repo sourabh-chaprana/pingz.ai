@@ -27,8 +27,8 @@ export default function TabLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="projects" />
       <Stack.Screen name="create" />
-      <Stack.Screen name="templates" />
-      <Stack.Screen name="pro" />
+      {/* <Stack.Screen name="templates" /> */}
+      {/* <Stack.Screen name="pro" /> */}
     </Stack>
   );
 }

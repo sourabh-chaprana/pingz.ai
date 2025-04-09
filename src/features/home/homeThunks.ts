@@ -28,7 +28,22 @@ export const fetchRecentTemplates = createAsyncThunk<
 >("home/fetchRecentTemplates", async (_, { getState, rejectWithValue }) => {
   try {
     const { auth } = getState();
-    const userId = auth.user?.id;
+    let userId = auth.user?.id;
+
+    // If userId is not available in auth.user, try to get it from token
+    if (!userId) {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (token) {
+        try {
+          // Decode token to get user data
+          const tokenParts = token.split('.');
+          const tokenPayload = JSON.parse(atob(tokenParts[1]));
+          userId = tokenPayload.userId || tokenPayload.sub;
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
 
     if (!userId) {
       return rejectWithValue("User ID is required");
@@ -37,6 +52,7 @@ export const fetchRecentTemplates = createAsyncThunk<
     const response = await api.get(`/template/recent/${userId}`);
     return response.data;
   } catch (error: any) {
+    console.error('Error fetching recent templates:', error);
     return rejectWithValue(
       error.response?.data?.message || "Failed to fetch recent templates"
     );
@@ -77,20 +93,37 @@ export const fetchTemplatesByTag = createAsyncThunk<
   }
 });
 
-// Fetch holiday templates instead of pharmacy templates
+// Fetch holiday templates with token handling
 export const fetchHolidayTemplates = createAsyncThunk<
   Template[],
   void,
   { rejectValue: string; state: RootState }
->("home/fetchHolidayTemplates", async (_, { rejectWithValue }) => {
-  try {
-    const response = await api.get('/template/event/holidays');
-    console.log('Holiday API response:', response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error('Holiday API error:', error);
-    return rejectWithValue(
-      error.response?.data?.message || "Failed to fetch holiday templates"
-    );
+>(
+  'home/fetchHolidayTemplates',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Get token from AsyncStorage
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token) {
+        return rejectWithValue('No authentication token available');
+      }
+
+      const response = await api.get('/template/event/holidays');
+      console.log('Holiday API response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Holiday API error:', error);
+
+      if (error.response?.status === 401) {
+        // Clear tokens on authentication error
+        await AsyncStorage.removeItem('auth_token');
+        await AsyncStorage.removeItem('refreshToken');
+        return rejectWithValue('Authentication required. Please log in again.');
+      }
+
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch holiday templates'
+      );
+    }
   }
-});
+);

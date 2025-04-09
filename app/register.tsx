@@ -25,7 +25,7 @@ export default function RegisterScreen() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpVerificationLoading, setOtpVerificationLoading] = useState(false);
-  const [useMobile, setUseMobile] = useState(false);
+  const [useMobile, setUseMobile] = useState(true);
   const [txnId, setTxnId] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -389,7 +389,7 @@ export default function RegisterScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.card}>
-        <ThemedText style={styles.title}>Create an account</ThemedText>
+        <ThemedText style={styles.title}>Create a Pingz account</ThemedText>
         
         <View style={styles.loginLinkContainer}>
           <ThemedText style={styles.loginLinkText}>Already have an account? </ThemedText>
@@ -397,10 +397,6 @@ export default function RegisterScreen() {
             <ThemedText style={styles.loginLink}>Login</ThemedText>
           </TouchableOpacity>
         </View>
-
-        {error && (
-          <ThemedText style={styles.error}>{error}</ThemedText>
-        )}
 
         <ThemedText style={styles.inputLabel}>Full Name</ThemedText>
         <TextInput
@@ -500,12 +496,6 @@ export default function RegisterScreen() {
         <View style={styles.socialContainer}>
           <TouchableOpacity style={styles.socialButton}>
             <FontAwesome name="google" size={22} color="#DB4437" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="apple" size={22} color="#000000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <FontAwesome name="facebook" size={22} color="#4267B2" />
           </TouchableOpacity>
         </View>
       </View>
