@@ -22,7 +22,7 @@ export default function ActiveTemplatePage() {
     const fetchTemplates = async () => {
       try {
         setLoading(true);
-        const token = await AsyncStorage.getItem('token');
+        const token = await AsyncStorage.getItem('auth_token');
         
         if (!token) {
           setError('Authentication required');

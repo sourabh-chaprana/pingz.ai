@@ -24,9 +24,7 @@ import api from '@/src/services/api';
 import Toast from 'react-native-toast-message';
 
 
-const IMAGE_API_URL = 'https://pingz.ai/api/render/api/image/overlay-text';
-const TOKEN_KEY = 'token';
-const CORS_PROXY = 'https://corsproxy.io/?';
+
 
 // Updated approach using icon library mappings
 // This assumes we're using icons from libraries like Ionicons (currently in your code)
@@ -318,7 +316,7 @@ export const fetchTemplatesByCategory = (categoryName: string) => {
       const response = await api.get(`/template/event/${formattedCategory}`, {
         timeout: 30000,
         headers: {
-          'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
+          'Authorization': `Bearer ${await AsyncStorage.getItem('auth_token')}`
         }
       });
       
@@ -451,7 +449,7 @@ export const fetchCategories = () => {
     try {
       dispatch(fetchCategoriesStart());
       
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
         throw new Error('Authentication token not found');
       }
