@@ -854,7 +854,7 @@ export default function TemplateEditor() {
           
           {currentTemplate.templateVariables?.map((variable, index) => (
             <View key={index} style={styles.formGroup}>
-              <ThemedText style={styles.formLabel}>{variable.name}</ThemedText>
+              <ThemedText style={styles.formLabel}>{toCamelCase(variable.name)}</ThemedText>
               {renderImageField(variable.name)}
             </View>
           ))}
