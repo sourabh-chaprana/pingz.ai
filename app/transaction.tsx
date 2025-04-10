@@ -247,7 +247,10 @@ const TransactionScreen = () => {
 
   // Format date for display in buttons
   const formatButtonDate = (date) => {
-    if (!date) return "Select Date";
+    if (!date) {
+      // Return different placeholder text based on which button it is
+      return "Start Date";  // This will be overridden in the button text
+    }
     return formatDate(date);
   };
 
@@ -372,7 +375,7 @@ const TransactionScreen = () => {
               onPress={() => setShowStartDatePicker(true)}
             >
               <ThemedText style={styles.dateButtonText}>
-                {formatButtonDate(startDate)}
+                {startDate ? formatDate(startDate) : "Start Date"}
               </ThemedText>
             </TouchableOpacity>
 
@@ -381,7 +384,7 @@ const TransactionScreen = () => {
               onPress={() => setShowEndDatePicker(true)}
             >
               <ThemedText style={styles.dateButtonText}>
-                {formatButtonDate(endDate)}
+                {endDate ? formatDate(endDate) : "End Date"}
               </ThemedText>
             </TouchableOpacity>
 

@@ -907,7 +907,7 @@ export default function TemplateEditor() {
               style={styles.generateButton} 
               onPress={handleGenerateImage}
             >
-              <ThemedText style={styles.generateButtonText}>Generate Image</ThemedText>
+              <ThemedText style={styles.generateButtonText}>Preview Image</ThemedText>
             </TouchableOpacity>
 
             {/* Action Icons */}
