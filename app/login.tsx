@@ -79,6 +79,7 @@ export default function LoginScreen() {
     webClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com', // Use the same ID for web
     // Add iOS client ID if you have one
     // iosClientId: 'YOUR_IOS_CLIENT_ID',
+    expoClientId: "1025763914604-4i6tjf76eh9ucs6gm5r3p2es7a6kl5ju.apps.googleusercontent.com",
     scopes: ['profile', 'email'],
     redirectUri: Platform.select({
       web: 'https://auth.expo.io/@sourabhchaprana/pingz', // Replace with your correct redirect URI
