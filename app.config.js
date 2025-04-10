@@ -26,9 +26,10 @@ export default {
         "expo-splash-screen",
         {
           "image": "./assets/images/pingz.png",
-          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#ffffff",
+          "imageWidth": null,
+          "imageHeight": null
         }
       ],
     ],
@@ -44,7 +45,7 @@ export default {
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
+        foregroundImage: "./assets/images/pingz-foreground.png",
         backgroundColor: "#ffffff",
       },
     },
@@ -66,12 +67,7 @@ export default {
     splash: {
       image: "./assets/images/pingz.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff",
-      imageResizeMode: "contain",
-      splashScreen: {
-        width: 300,
-        height: 300
-      }
+      backgroundColor: "#ffffff"
     },
   },
 };

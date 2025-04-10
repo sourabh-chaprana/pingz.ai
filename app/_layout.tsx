@@ -803,8 +803,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   logo: {
-    width: width * 0.8,
-    height: height * 0.4,
+    width: '80%',
+    height: undefined,
+    aspectRatio: 1,
   },
   divider: {
     height: 1,
