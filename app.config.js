@@ -45,7 +45,8 @@ export default {
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
       adaptiveIcon: {
-        foregroundImage: "./assets/images/pingz-foreground.png",
+        // foregroundImage: "apk icon"
+        foregroundImage: "./assets/images/pingz.png",
         backgroundColor: "#ffffff",
       },
     },
