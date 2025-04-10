@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Modal, Switch, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, TextInput, Dimensions, Platform, Modal, Switch, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
@@ -389,6 +389,11 @@ export default function RegisterScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.card}>
+        <Image 
+          source={require('../assets/images/pingz.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <ThemedText style={styles.title}>Create a Pingz account</ThemedText>
         
         <View style={styles.loginLinkContainer}>
@@ -693,6 +698,12 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   title: {
     fontSize: 24,

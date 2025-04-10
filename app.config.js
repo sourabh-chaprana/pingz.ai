@@ -35,7 +35,7 @@ export default {
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
       adaptiveIcon: {
-        // foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/images/pingz.png",
         backgroundColor: "#FFFFFF",
       },
     },
@@ -53,5 +53,6 @@ export default {
       // WARNING: NEVER use this in production!
       allowInsecureConnections: true,
     },
+    icon: "/assets/images/pingz.png",
   },
 };
