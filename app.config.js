@@ -22,6 +22,15 @@ export default {
           isAccessMediaLocationEnabled: true,
         },
       ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/pingz.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
     ],
     android: {
       permissions: [
@@ -36,7 +45,7 @@ export default {
       jsEngine: "hermes",
       adaptiveIcon: {
         foregroundImage: "./assets/images/pingz.png",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#ffffff",
       },
     },
     ios: {
@@ -53,6 +62,11 @@ export default {
       // WARNING: NEVER use this in production!
       allowInsecureConnections: true,
     },
-    icon: "/assets/images/pingz.png",
+    icon: "./assets/images/pingz.png",
+    splash: {
+      image: "./assets/images/pingz.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
+    },
   },
 };

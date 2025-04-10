@@ -82,7 +82,7 @@ export default function LoginScreen() {
     // Add these properties for more control
     scopes: ['profile', 'email'],
     redirectUri: Platform.select({
-      web: 'http://localhost:8081', // Change this to match your development environment
+      web: 'YOUR_ACTUAL_REDIRECT_URI',
       default: undefined
     })
   });
