@@ -10,14 +10,21 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "Allow Pingz to save images to your photo library",
+        "NSPhotoLibraryUsageDescription": "Allow Pingz to save images to your photo library"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/pingz.png",
         "backgroundColor": "#FFFFFF"
       },
-      "permissions": ["INTERNET"],
+      "permissions": [
+        "MEDIA_LIBRARY_WRITE_ONLY",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "package": "com.yourcompany.pingz",
       "config": {
         "networkSecurityConfig": "@xml/network_security_config"

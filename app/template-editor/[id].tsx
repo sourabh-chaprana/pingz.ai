@@ -512,15 +512,17 @@ export default function TemplateEditor() {
           position: 'bottom',
         });
       } 
-      else if (Platform.OS === 'ios') {
-        // iOS-specific download logic
-        const { status } = await MediaLibrary.requestPermissionsAsync();
+      else if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        // Request specific permission for saving images
+        const { status } = await MediaLibrary.requestPermissionsAsync(
+          MediaLibrary.PermissionStatus.LIMITED // This requests limited access
+        );
         
         if (status !== 'granted') {
           Toast.show({
             type: 'error',
             text1: 'Permission Required',
-            text2: 'Please grant media library permissions to save images',
+            text2: 'Please allow access to save images to your gallery',
             position: 'bottom',
           });
           return;
@@ -564,76 +566,6 @@ export default function TemplateEditor() {
           text2: 'Image saved to gallery',
           position: 'bottom',
         });
-      }
-      else if (Platform.OS === 'android') {
-        // Android-specific download logic
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        
-        if (status !== 'granted') {
-          // Use the custom success/error UI instead of Toast
-          setShowPermissionError(true);
-          setTimeout(() => {
-            setShowPermissionError(false);
-          }, 3000);
-          return;
-        }
-
-        // Create a temporary file
-        const filename = `pingz_${Date.now()}.png`;
-        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-
-        // Download or write the file
-        if (imageToDownload.startsWith('data:')) {
-          const base64Data = imageToDownload.split(',')[1];
-          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-        } else {
-          const downloadResult = await FileSystem.downloadAsync(
-            imageToDownload,
-            fileUri
-          );
-
-          if (downloadResult.status !== 200) {
-            throw new Error('Failed to download image');
-          }
-        }
-
-        // Save to media library - store the result in a variable
-        const asset = await MediaLibrary.createAssetAsync(fileUri);
-        
-        // Show the custom success UI instead of Toast
-        setShowDownloadSuccess(true);
-        console.log("Download success message showing now");
-        
-        // Try to create album in the background
-        try {
-          MediaLibrary.getAlbumAsync('Pingz')
-            .then(album => {
-              if (album === null) {
-                return MediaLibrary.createAlbumAsync('Pingz', asset, false);
-              } else {
-                return MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-              }
-            })
-            .catch(error => {
-              console.log("Album creation error (ignored):", error);
-            });
-        } catch (albumError) {
-          console.log("Album creation outer error (ignored):", albumError);
-        }
-
-        // Cleanup the temporary file
-        try {
-          await FileSystem.deleteAsync(fileUri);
-        } catch (cleanupError) {
-          console.error('Cleanup error:', cleanupError);
-        }
-
-        // After 3 seconds, hide the indicator
-        setTimeout(() => {
-          setShowDownloadSuccess(false);
-        }, 3000);
       }
     } catch (error) {
       console.error('Download error:', error);
