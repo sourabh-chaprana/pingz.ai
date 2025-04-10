@@ -15,7 +15,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { maybeCompleteAuthSession } from 'expo-web-browser';
 import { setTokens } from '../src/features/auth/authSlice';
-import { BASE_URL } from '@/src/services/api';
+import api, { BASE_URL } from '@/src/services/api';
 const { width } = Dimensions.get('window');
 
 // Determine if we're running in a web environment
@@ -75,14 +75,13 @@ export default function LoginScreen() {
 
   // Update Google Auth configuration with proper client IDs
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
-   
-    iosClientId: 'YOUR_CORRECT_IOS_CLIENT_ID',
     androidClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com',
-    webClientId: 'YOUR_CORRECT_WEB_CLIENT_ID',
-    // Add these properties for more control
+    webClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com', // Use the same ID for web
+    // Add iOS client ID if you have one
+    // iosClientId: 'YOUR_IOS_CLIENT_ID',
     scopes: ['profile', 'email'],
     redirectUri: Platform.select({
-      web: `${BASE_URL}/697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com`,
+      web: 'https://auth.expo.io/@sourabhchaprana/pingz', // Replace with your correct redirect URI
       default: undefined
     })
   });
@@ -398,23 +397,30 @@ export default function LoginScreen() {
       console.log('Google auth result type:', result.type);
       
       if (result.type === 'success') {
-        // Get user info using the access token
-        const userInfoResponse = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-          headers: { Authorization: `Bearer ${result.authentication.accessToken}` },
-        });
+        const googleToken = result.authentication.accessToken;
         
-        const userInfo = await userInfoResponse.json();
-        console.log('Google user info:', userInfo);
+        // Exchange Google token for app tokens
+        const tokenExchangeResponse = await fetch(`${BASE_URL}/user/google?token=${googleToken}`);
         
-        // Send the token to your backend for verification and user creation/login
-        // This depends on your backend implementation
-        const backendResponse = await dispatch(login({ 
-          provider: 'google',
-          token: result.authentication.accessToken,
-          userData: userInfo
-        })).unwrap();
+        if (!tokenExchangeResponse.ok) {
+          throw new Error(`Token exchange failed: ${tokenExchangeResponse.status}`);
+        }
         
-        if (backendResponse) {
+        // Parse the response to get idToken and refreshToken
+        const tokenData = await tokenExchangeResponse.json();
+        console.log('Token exchange successful:', tokenData);
+        
+        if (tokenData.idToken) {
+          // Store tokens in AsyncStorage
+          await AsyncStorage.setItem('auth_token', tokenData.idToken);
+          await AsyncStorage.setItem('refreshToken', tokenData.refreshToken || '');
+          
+          // Update Redux store
+          dispatch(setTokens({ 
+            token: tokenData.idToken, 
+            refreshToken: tokenData.refreshToken 
+          }));
+          
           Toast.show({
             type: 'success',
             text1: 'Success',
@@ -425,6 +431,8 @@ export default function LoginScreen() {
           setTimeout(() => {
             router.replace('/(tabs)');
           }, 300);
+        } else {
+          throw new Error('No idToken received from API');
         }
       } else {
         console.log('Authentication failed:', result);
@@ -452,7 +460,7 @@ export default function LoginScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <ThemedText style={styles.title}>Login to Pingz</ThemedText>
+        <ThemedText style={styles.title}>L to Pingz</ThemedText>
         
         <View style={styles.loginLinkContainer}>
           <ThemedText style={styles.loginLinkText}>Don't have an account? </ThemedText>
