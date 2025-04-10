@@ -15,7 +15,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { maybeCompleteAuthSession } from 'expo-web-browser';
 import { setTokens } from '../src/features/auth/authSlice';
-
+import { BASE_URL } from '@/src/services/api';
 const { width } = Dimensions.get('window');
 
 // Determine if we're running in a web environment
@@ -75,14 +75,14 @@ export default function LoginScreen() {
 
   // Update Google Auth configuration with proper client IDs
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
-    expoClientId: 'YOUR_CORRECT_EXPO_CLIENT_ID',
+   
     iosClientId: 'YOUR_CORRECT_IOS_CLIENT_ID',
-    androidClientId: 'YOUR_CORRECT_ANDROID_CLIENT_ID',
+    androidClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com',
     webClientId: 'YOUR_CORRECT_WEB_CLIENT_ID',
     // Add these properties for more control
     scopes: ['profile', 'email'],
     redirectUri: Platform.select({
-      web: 'YOUR_ACTUAL_REDIRECT_URI',
+      web: `${BASE_URL}/697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com`,
       default: undefined
     })
   });
