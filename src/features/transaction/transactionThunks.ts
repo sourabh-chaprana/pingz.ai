@@ -13,7 +13,7 @@ import { jwtDecode } from "jwt-decode";
 // Function to get the user ID from the JWT token
 const getUserIdFromToken = async () => {
   try {
-    const token = await AsyncStorage.getItem("token");
+    const token = await AsyncStorage.getItem("auth_token");
     if (!token) {
       throw new Error("Authentication token not found");
     }
@@ -42,7 +42,7 @@ export const fetchTransactions = (params: FetchTransactionsParams) => {
         fetchTransactionsStart({ page: params.page, size: params.size })
       );
 
-      const token = await AsyncStorage.getItem("token");
+      const token = await AsyncStorage.getItem("auth_token");
       if (!token) {
         throw new Error("Authentication token not found");
       }

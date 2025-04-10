@@ -44,7 +44,7 @@ export default {
       package: "com.yourcompany.pingz",
       jsEngine: "hermes",
       adaptiveIcon: {
-        foregroundImage: "./assets/images/pingz.png",
+        foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
     },
@@ -66,7 +66,12 @@ export default {
     splash: {
       image: "./assets/images/pingz.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
+      imageResizeMode: "contain",
+      splashScreen: {
+        width: 300,
+        height: 300
+      }
     },
   },
 };

@@ -84,7 +84,7 @@ function CustomSplashScreen() {
   return (
     <View style={styles.splashContainer}>
       <Image
-        source={require("../assets/images/pingz.png")} // Make sure to add your logo to assets folder
+        source={require("../assets/images/pingz.png")}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -800,11 +800,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF", // Customize this to match your brand
+    backgroundColor: "#FFFFFF",
   },
   logo: {
-    width: width * 0.7,
-    height: height * 0.3,
+    width: width * 0.8,
+    height: height * 0.4,
   },
   divider: {
     height: 1,
