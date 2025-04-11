@@ -390,26 +390,34 @@ export default function LoginScreen() {
     setPassword('');
   };
 
-  // Add this function near your other Google-related functions
+  // Update the configureGoogleSignIn function
   const configureGoogleSignIn = () => {
     if (Platform.OS === 'android') {
       GoogleSignin.configure({
-        webClientId: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com', // Use web client ID
+        webClientId: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
         androidClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com',
         offlineAccess: true,
+        forceCodeForRefreshToken: true, // Add this to ensure refresh token
       });
     }
   };
 
-  // Add the Android sign-in handler
+  // Update the handleAndroidGoogleSignIn function
   const handleAndroidGoogleSignIn = async () => {
     try {
       setIsGoogleAuthInProgress(true);
+
+      // First, sign out to ensure clean state
+      await GoogleSignin.signOut();
       
-      await GoogleSignin.hasPlayServices();
+      // Check if Play Services are available
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      
+      // Start sign in flow
       const userInfo = await GoogleSignin.signIn();
-      
-      if (userInfo.idToken) {
+      console.log('Google Sign-In Success:', userInfo);
+
+      if (userInfo?.idToken) {
         // Send the token to your backend
         const tokenExchangeResponse = await fetch(`${BASE_URL}user/google?token=${userInfo.idToken}`, {
           method: 'POST',
@@ -418,18 +426,25 @@ export default function LoginScreen() {
           }
         });
 
+        const data = await tokenExchangeResponse.json();
+        console.log('Backend Response:', data);
+
         if (!tokenExchangeResponse.ok) {
-          throw new Error('Failed to exchange token');
+          throw new Error(data.message || 'Failed to exchange token');
         }
 
-        const data = await tokenExchangeResponse.json();
-        
         if (data.idToken) {
           // Store tokens in AsyncStorage
           await AsyncStorage.setItem('auth_token', data.idToken);
           if (data.refreshToken) {
             await AsyncStorage.setItem('refreshToken', data.refreshToken);
           }
+
+          // Update Redux store
+          dispatch(setTokens({
+            token: data.idToken,
+            refreshToken: data.refreshToken
+          }));
 
           Toast.show({
             type: 'success',
@@ -441,27 +456,33 @@ export default function LoginScreen() {
           setTimeout(() => {
             router.replace('/(tabs)');
           }, 300);
+        } else {
+          throw new Error('No token received from server');
         }
       }
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
+      let errorMessage = 'Failed to complete Google login';
+
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // User cancelled the login flow
+        errorMessage = 'Sign in cancelled';
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        // Operation is in progress already
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Login Failed',
-          text2: 'Failed to complete Google login',
-        });
+        errorMessage = 'Sign in already in progress';
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        errorMessage = 'Play services not available';
       }
+
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: errorMessage,
+      });
     } finally {
       setIsGoogleAuthInProgress(false);
     }
   };
 
-  // Update the useEffect to configure Google Sign-In for Android
+  // Update the useEffect to initialize Google Sign-In properly
   useEffect(() => {
     if (Platform.OS === 'web') {
       // Existing web configuration...
@@ -506,6 +527,13 @@ export default function LoginScreen() {
       // Configure Google Sign-In for Android
       configureGoogleSignIn();
     }
+
+    // Add cleanup for Android
+    return () => {
+      if (Platform.OS === 'android') {
+        GoogleSignin.signOut();
+      }
+    };
   }, []);
 
   // Update the handleGoogleCredentialResponse function
@@ -586,7 +614,10 @@ export default function LoginScreen() {
           onPress={handleAndroidGoogleSignIn}
           disabled={isGoogleAuthInProgress}
         >
-          <FontAwesome name="google" size={22} color="#DB4437" />
+          <View style={styles.googleButtonContent}>
+            <FontAwesome name="google" size={22} color="#DB4437" />
+            <ThemedText style={styles.googleButtonText}>Sign in with Google</ThemedText>
+          </View>
         </TouchableOpacity>
       );
     }
@@ -971,7 +1002,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   socialButton: {
-    width: width / 5,
+    width: '80%',
     height: 48,
     borderRadius: 8,
     borderWidth: 1,
@@ -979,13 +1010,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    alignSelf: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
       android: {
         elevation: 2,
       },
@@ -1242,5 +1268,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  googleButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#444',
+    fontWeight: '600',
   },
 }); 
