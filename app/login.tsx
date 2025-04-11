@@ -16,6 +16,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import { maybeCompleteAuthSession } from 'expo-web-browser';
 import { setTokens } from '../src/features/auth/authSlice';
 import api, { BASE_URL } from '@/src/services/api';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 const { width } = Dimensions.get('window');
 
 // Determine if we're running in a web environment
@@ -389,7 +390,123 @@ export default function LoginScreen() {
     setPassword('');
   };
 
+  // Add this function near your other Google-related functions
+  const configureGoogleSignIn = () => {
+    if (Platform.OS === 'android') {
+      GoogleSignin.configure({
+        webClientId: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com', // Use web client ID
+        androidClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com',
+        offlineAccess: true,
+      });
+    }
+  };
 
+  // Add the Android sign-in handler
+  const handleAndroidGoogleSignIn = async () => {
+    try {
+      setIsGoogleAuthInProgress(true);
+      
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      
+      if (userInfo.idToken) {
+        // Send the token to your backend
+        const tokenExchangeResponse = await fetch(`${BASE_URL}user/google?token=${userInfo.idToken}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!tokenExchangeResponse.ok) {
+          throw new Error('Failed to exchange token');
+        }
+
+        const data = await tokenExchangeResponse.json();
+        
+        if (data.idToken) {
+          // Store tokens in AsyncStorage
+          await AsyncStorage.setItem('auth_token', data.idToken);
+          if (data.refreshToken) {
+            await AsyncStorage.setItem('refreshToken', data.refreshToken);
+          }
+
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Google login successful',
+          });
+
+          // Navigate to home page
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 300);
+        }
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // Operation is in progress already
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: 'Failed to complete Google login',
+        });
+      }
+    } finally {
+      setIsGoogleAuthInProgress(false);
+    }
+  };
+
+  // Update the useEffect to configure Google Sign-In for Android
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // Existing web configuration...
+      const script = document.createElement('script');
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        // Initialize Google Sign-In after script loads
+        if (window.google?.accounts) {
+          window.google.accounts.id.initialize({
+            client_id: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          // Render the custom Google button
+          window.google.accounts.id.renderButton(
+            document.getElementById("googleButton"),
+            { 
+              type: "standard",
+              theme: "outline",
+              size: "large",
+              text: "sign_in_with",
+              shape: "rectangular",
+              width: 250
+            }
+          );
+        }
+      };
+      document.body.appendChild(script);
+
+      return () => {
+        // Cleanup
+        const googleScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+        if (googleScript) {
+          googleScript.remove();
+        }
+      };
+    } else {
+      // Configure Google Sign-In for Android
+      configureGoogleSignIn();
+    }
+  }, []);
 
   // Update the handleGoogleCredentialResponse function
   const handleGoogleCredentialResponse = async (response: any) => {
@@ -446,49 +563,34 @@ export default function LoginScreen() {
     }
   };
 
-  // Update the useEffect that loads Google script
-  useEffect(() => {
+  // Update the social container in your return statement
+  const renderGoogleButton = () => {
     if (Platform.OS === 'web') {
-      // Load Google Identity Services script
-      const script = document.createElement('script');
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        // Initialize Google Sign-In after script loads
-        if (window.google?.accounts) {
-          window.google.accounts.id.initialize({
-            client_id: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
-            callback: handleGoogleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true,
-          });
-
-          // Render the custom Google button
-          window.google.accounts.id.renderButton(
-            document.getElementById("googleButton"),
-            { 
-              type: "standard",
-              theme: "outline",
-              size: "large",
-              text: "sign_in_with",
-              shape: "rectangular",
-              width: 250
-            }
-          );
-        }
-      };
-      document.body.appendChild(script);
-
-      return () => {
-        // Cleanup
-        const googleScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-        if (googleScript) {
-          googleScript.remove();
-        }
-      };
+      return (
+        <div 
+          id="googleButton"
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%'
+          }}
+        />
+      );
+    } else {
+      return (
+        <TouchableOpacity 
+          style={[
+            styles.socialButton,
+            isGoogleAuthInProgress && styles.disabledButton
+          ]}
+          onPress={handleAndroidGoogleSignIn}
+          disabled={isGoogleAuthInProgress}
+        >
+          <FontAwesome name="google" size={22} color="#DB4437" />
+        </TouchableOpacity>
+      );
     }
-  }, []);
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -597,29 +699,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.socialContainer}>
-          {Platform.OS === 'web' ? (
-            // For web, use a div that Google's script will transform
-            <div 
-              id="googleButton"
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                width: '100%'
-              }}
-            />
-          ) : (
-            // For mobile, keep your existing button
-            <TouchableOpacity 
-              style={[
-                styles.socialButton,
-                isGoogleAuthInProgress && styles.disabledButton
-              ]}
-              onPress={handleGoogleSignIn}
-              disabled={!googleRequest || isGoogleAuthInProgress}
-            >
-              <FontAwesome name="google" size={22} color="#DB4437" />
-            </TouchableOpacity>
-          )}
+          {renderGoogleButton()}
         </View>
       </View>
 
