@@ -397,7 +397,7 @@ export default function LoginScreen() {
         webClientId: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
         androidClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com',
         offlineAccess: true,
-        forceCodeForRefreshToken: true, // Add this to ensure refresh token
+        forceCodeForRefreshToken: true, // This ensures you get a refresh token
       });
     }
   };
@@ -407,38 +407,57 @@ export default function LoginScreen() {
     try {
       setIsGoogleAuthInProgress(true);
 
-      // First, sign out to ensure clean state
-      await GoogleSignin.signOut();
-      
-      // Check if Play Services are available
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      
-      // Start sign in flow
+      // Check if user is already signed in and sign out
+      const isSignedIn = await GoogleSignin.isSignedIn();
+      if (isSignedIn) {
+        await GoogleSignin.signOut();
+      }
+
+      // Check and ensure Play Services are available
+      await GoogleSignin.hasPlayServices({ 
+        showPlayServicesUpdateDialog: true 
+      });
+
+      // Get user info and tokens
       const userInfo = await GoogleSignin.signIn();
       console.log('Google Sign-In Success:', userInfo);
 
       if (userInfo?.idToken) {
-        // Send the token to your backend
-        const tokenExchangeResponse = await fetch(`${BASE_URL}user/google?token=${userInfo.idToken}`, {
+        // Get tokens
+        const tokens = await GoogleSignin.getTokens();
+        console.log('Google Tokens:', tokens);
+
+        // Send tokens to your backend
+        const tokenExchangeResponse = await fetch(`${BASE_URL}user/google`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          body: JSON.stringify({
+            idToken: userInfo.idToken,
+            accessToken: tokens.accessToken,
+            email: userInfo.user.email,
+            name: userInfo.user.name,
+            photo: userInfo.user.photo,
+          })
         });
 
-        const data = await tokenExchangeResponse.json();
-        console.log('Backend Response:', data);
-
         if (!tokenExchangeResponse.ok) {
-          throw new Error(data.message || 'Failed to exchange token');
+          const errorData = await tokenExchangeResponse.json();
+          throw new Error(errorData.message || 'Failed to exchange token');
         }
+
+        const data = await tokenExchangeResponse.json();
+        console.log('Backend response:', data);
 
         if (data.idToken) {
           // Store tokens in AsyncStorage
-          await AsyncStorage.setItem('auth_token', data.idToken);
-          if (data.refreshToken) {
-            await AsyncStorage.setItem('refreshToken', data.refreshToken);
-          }
+          await AsyncStorage.multiSet([
+            ['auth_token', data.idToken],
+            ['refreshToken', data.refreshToken || ''],
+            ['user_email', userInfo.user.email],
+            ['user_name', userInfo.user.name || ''],
+          ]);
 
           // Update Redux store
           dispatch(setTokens({
@@ -452,7 +471,7 @@ export default function LoginScreen() {
             text2: 'Google login successful',
           });
 
-          // Navigate to home page
+          // Navigate to home page with a small delay to ensure storage is complete
           setTimeout(() => {
             router.replace('/(tabs)');
           }, 300);
@@ -464,12 +483,20 @@ export default function LoginScreen() {
       console.error('Google Sign-In Error:', error);
       let errorMessage = 'Failed to complete Google login';
 
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        errorMessage = 'Sign in cancelled';
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        errorMessage = 'Sign in already in progress';
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        errorMessage = 'Play services not available';
+      if (error?.code) {
+        switch (error.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            errorMessage = 'Sign in was cancelled';
+            break;
+          case statusCodes.IN_PROGRESS:
+            errorMessage = 'Sign in is already in progress';
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            errorMessage = 'Play services not available or outdated';
+            break;
+          default:
+            errorMessage = error.message || errorMessage;
+        }
       }
 
       Toast.show({
@@ -477,12 +504,19 @@ export default function LoginScreen() {
         text1: 'Login Failed',
         text2: errorMessage,
       });
+
+      // If there's an error, ensure user is signed out from Google
+      try {
+        await GoogleSignin.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out after failed login:', signOutError);
+      }
     } finally {
       setIsGoogleAuthInProgress(false);
     }
   };
 
-  // Update the useEffect to initialize Google Sign-In properly
+  // Update the useEffect for configuration
   useEffect(() => {
     if (Platform.OS === 'web') {
       // Existing web configuration...
@@ -527,13 +561,6 @@ export default function LoginScreen() {
       // Configure Google Sign-In for Android
       configureGoogleSignIn();
     }
-
-    // Add cleanup for Android
-    return () => {
-      if (Platform.OS === 'android') {
-        GoogleSignin.signOut();
-      }
-    };
   }, []);
 
   // Update the handleGoogleCredentialResponse function
@@ -591,7 +618,7 @@ export default function LoginScreen() {
     }
   };
 
-  // Update the social container in your return statement
+  // Update the renderGoogleButton function
   const renderGoogleButton = () => {
     if (Platform.OS === 'web') {
       return (
@@ -616,7 +643,9 @@ export default function LoginScreen() {
         >
           <View style={styles.googleButtonContent}>
             <FontAwesome name="google" size={22} color="#DB4437" />
-            <ThemedText style={styles.googleButtonText}>Sign in with Google</ThemedText>
+            <ThemedText style={styles.googleButtonText}>
+              Sign in with Google
+            </ThemedText>
           </View>
         </TouchableOpacity>
       );
@@ -1012,6 +1041,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignSelf: 'center',
     ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
       android: {
         elevation: 2,
       },
