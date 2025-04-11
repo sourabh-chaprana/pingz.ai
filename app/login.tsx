@@ -50,6 +50,12 @@ export const Storage = {
 // Initialize WebBrowser for auth redirect
 maybeCompleteAuthSession();
 
+interface GoogleLoginResponse {
+  idToken: string;
+  refreshToken?: string;
+  // ... any other fields
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -73,16 +79,20 @@ export default function LoginScreen() {
   // Create refs for OTP inputs
   const otpInputs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
 
-  // Update Google Auth configuration with proper client IDs
+  // Add a state flag to track ongoing authentication
+  const [isGoogleAuthInProgress, setIsGoogleAuthInProgress] = useState(false);
+
+  // Update Google Auth configuration with proper client IDs and redirect URIs
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
     androidClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com',
-    webClientId: '697533994940-5f64m89umo7ikbbllv3smq7pka4m0c5j.apps.googleusercontent.com', // Use the same ID for web
+    webClientId: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
     // Add iOS client ID if you have one
     // iosClientId: 'YOUR_IOS_CLIENT_ID',
-    expoClientId: "1025763914604-4i6tjf76eh9ucs6gm5r3p2es7a6kl5ju.apps.googleusercontent.com",
+    // expoClientId: "1025763914604-4i6tjf76eh9ucs6gm5r3p2es7a6kl5ju.apps.googleusercontent.com",
     scopes: ['profile', 'email'],
     redirectUri: Platform.select({
-      web: 'https://auth.expo.io/@sourabhchaprana/pingz', // Replace with your correct redirect URI
+      // Use one of the authorized redirect URIs from your Google Console
+      web: 'http://localhost:8081/dashboard',
       default: undefined
     })
   });
@@ -379,79 +389,104 @@ export default function LoginScreen() {
     setPassword('');
   };
 
-  // Handle Google sign-in
+  // Add this function to handle mobile Google sign-in
   const handleGoogleSignIn = async () => {
     try {
-      console.log('Starting Google authentication...');
+      setIsGoogleAuthInProgress(true);
+      const response = await promptGoogleAsync();
       
-      // Check if the request is ready before proceeding
-      if (!googleRequest) {
-        Toast.show({
-          type: 'error',
-          text1: 'Google Sign In',
-          text2: 'Google authentication is not ready yet. Please try again.',
+      if (response?.type === 'success') {
+        // Get user info using the access token
+        const tokenExchangeResponse = await fetch(`${BASE_URL}user/google?token=${response.authentication.accessToken}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
-        return;
-      }
-      
-      const result = await promptGoogleAsync();
-      console.log('Google auth result type:', result.type);
-      
-      if (result.type === 'success') {
-        const googleToken = result.authentication.accessToken;
-        
-        // Exchange Google token for app tokens
-        const tokenExchangeResponse = await fetch(`${BASE_URL}/user/google?token=${googleToken}`);
-        
+
         if (!tokenExchangeResponse.ok) {
-          throw new Error(`Token exchange failed: ${tokenExchangeResponse.status}`);
+          throw new Error('Failed to exchange token');
         }
+
+        const data = await tokenExchangeResponse.json();
         
-        // Parse the response to get idToken and refreshToken
-        const tokenData = await tokenExchangeResponse.json();
-        console.log('Token exchange successful:', tokenData);
-        
-        if (tokenData.idToken) {
+        if (data.idToken) {
           // Store tokens in AsyncStorage
-          await AsyncStorage.setItem('auth_token', tokenData.idToken);
-          await AsyncStorage.setItem('refreshToken', tokenData.refreshToken || '');
-          
+          await AsyncStorage.setItem('auth_token', data.idToken);
+          if (data.refreshToken) {
+            await AsyncStorage.setItem('refreshToken', data.refreshToken);
+          }
+
           // Update Redux store
           dispatch(setTokens({ 
-            token: tokenData.idToken, 
-            refreshToken: tokenData.refreshToken 
+            token: data.idToken, 
+            refreshToken: data.refreshToken 
           }));
-          
+
           Toast.show({
             type: 'success',
             text1: 'Success',
             text2: 'Google login successful',
           });
           
-          // Navigate to main app
-          setTimeout(() => {
-            router.replace('/(tabs)');
-          }, 300);
-        } else {
-          throw new Error('No idToken received from API');
+          router.replace('/(tabs)');
         }
-      } else {
-        console.log('Authentication failed:', result);
-        Toast.show({
-          type: 'error',
-          text1: 'Login Failed',
-          text2: `Google authentication error: ${result.type}`,
-        });
       }
     } catch (error) {
       console.error('Google sign in error:', error);
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: typeof error === 'string' ? error : 'Failed to authenticate with Google',
+        text2: 'Failed to complete Google login',
       });
+    } finally {
+      setIsGoogleAuthInProgress(false);
     }
   };
+
+  // Update the useEffect that loads Google script
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // Load Google Identity Services script
+      const script = document.createElement('script');
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        // Initialize Google Sign-In after script loads
+        if (window.google?.accounts) {
+          window.google.accounts.id.initialize({
+            client_id: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
+            callback: handleGoogleSignIn,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          // Render the custom Google button
+          window.google.accounts.id.renderButton(
+            document.getElementById("googleButton"),
+            { 
+              type: "standard",
+              theme: "outline",
+              size: "large",
+              text: "sign_in_with",
+              shape: "rectangular",
+              width: 250
+            }
+          );
+        }
+      };
+      document.body.appendChild(script);
+
+      return () => {
+        // Cleanup
+        const googleScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+        if (googleScript) {
+          googleScript.remove();
+        }
+      };
+    }
+  }, []);
 
   return (
     <ThemedView style={styles.container}>
@@ -560,13 +595,29 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.socialContainer}>
-          <TouchableOpacity 
-            style={styles.socialButton}
-            onPress={handleGoogleSignIn}
-            disabled={!googleRequest}
-          >
-            <FontAwesome name="google" size={22} color="#DB4437" />
-          </TouchableOpacity>
+          {Platform.OS === 'web' ? (
+            // For web, use the existing div that Google's script will transform
+            <div 
+              id="googleButton"
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                width: '100%'
+              }}
+            />
+          ) : (
+            // For mobile, use the TouchableOpacity button
+            <TouchableOpacity 
+              style={[
+                styles.socialButton,
+                isGoogleAuthInProgress && styles.disabledButton
+              ]}
+              onPress={handleGoogleSignIn}
+              disabled={!googleRequest || isGoogleAuthInProgress}
+            >
+              <FontAwesome name="google" size={22} color="#DB4437" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -1098,5 +1149,16 @@ const styles = StyleSheet.create({
   noResultsText: {
     fontSize: 16,
     color: '#666',
+  },
+  webSocialButton: {
+    flexDirection: 'row',
+    width: 'auto',
+    paddingHorizontal: 16,
+    minWidth: 200,
+  },
+  socialButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
   },
 }); 

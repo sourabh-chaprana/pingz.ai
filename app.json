@@ -28,7 +28,8 @@
       "package": "com.yourcompany.pingz",
       "config": {
         "networkSecurityConfig": "@xml/network_security_config"
-      }
+      },
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
