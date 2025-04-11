@@ -389,15 +389,17 @@ export default function LoginScreen() {
     setPassword('');
   };
 
-  // Add this function to handle mobile Google sign-in
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsGoogleAuthInProgress(true);
-      const response = await promptGoogleAsync();
-      
-      if (response?.type === 'success') {
-        // Get user info using the access token
-        const tokenExchangeResponse = await fetch(`${BASE_URL}user/google?token=${response.authentication.accessToken}`, {
+
+
+  // Update the handleGoogleCredentialResponse function
+  const handleGoogleCredentialResponse = async (response: any) => {
+    console.log("Google Response:", response);
+    if (response.credential) {
+      try {
+        setIsGoogleAuthInProgress(true);
+        
+        // Send the credential to your backend
+        const tokenExchangeResponse = await fetch(`${BASE_URL}user/google?token=${response.credential}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -409,6 +411,7 @@ export default function LoginScreen() {
         }
 
         const data = await tokenExchangeResponse.json();
+        console.log("Token exchange response:", data);
         
         if (data.idToken) {
           // Store tokens in AsyncStorage
@@ -417,30 +420,29 @@ export default function LoginScreen() {
             await AsyncStorage.setItem('refreshToken', data.refreshToken);
           }
 
-          // Update Redux store
-          dispatch(setTokens({ 
-            token: data.idToken, 
-            refreshToken: data.refreshToken 
-          }));
-
           Toast.show({
             type: 'success',
             text1: 'Success',
             text2: 'Google login successful',
           });
-          
-          router.replace('/(tabs)');
+
+          // Navigate to home page
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 300);
+        } else {
+          throw new Error('No token received from server');
         }
+      } catch (error) {
+        console.error('Google login error:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: 'Failed to complete Google login',
+        });
+      } finally {
+        setIsGoogleAuthInProgress(false);
       }
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Login Failed',
-        text2: 'Failed to complete Google login',
-      });
-    } finally {
-      setIsGoogleAuthInProgress(false);
     }
   };
 
@@ -457,7 +459,7 @@ export default function LoginScreen() {
         if (window.google?.accounts) {
           window.google.accounts.id.initialize({
             client_id: '697533994940-vjis4vdlaalkrqcbht0fib2s9ltq5hda.apps.googleusercontent.com',
-            callback: handleGoogleSignIn,
+            callback: handleGoogleCredentialResponse,
             auto_select: false,
             cancel_on_tap_outside: true,
           });
@@ -596,7 +598,7 @@ export default function LoginScreen() {
 
         <View style={styles.socialContainer}>
           {Platform.OS === 'web' ? (
-            // For web, use the existing div that Google's script will transform
+            // For web, use a div that Google's script will transform
             <div 
               id="googleButton"
               style={{
@@ -606,7 +608,7 @@ export default function LoginScreen() {
               }}
             />
           ) : (
-            // For mobile, use the TouchableOpacity button
+            // For mobile, keep your existing button
             <TouchableOpacity 
               style={[
                 styles.socialButton,
