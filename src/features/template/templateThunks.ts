@@ -312,8 +312,8 @@ export const fetchTemplatesByCategory = (categoryName: string) => {
     try {
       dispatch(fetchTemplatesStart(categoryName));
       
-      const formattedCategory = categoryName.toLowerCase().replace(/\s+/g, '-');
-      const response = await api.get(`/template/event/${formattedCategory}`, {
+      // const formattedCategory = categoryName.toLowerCase().replace(/\s+/g, '-');
+      const response = await api.get(`/template/event/${categoryName}`, {
         timeout: 30000,
         headers: {
           'Authorization': `Bearer ${await AsyncStorage.getItem('auth_token')}`

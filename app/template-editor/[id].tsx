@@ -84,6 +84,7 @@ export default function TemplateEditor() {
   const [headerImage, setHeaderImage] = useState<string | null>(null);
   const [footerImage, setFooterImage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
+  const [showProModal, setShowProModal] = useState(false);
 
   // Add user data state to store header/footer images
   const userData = useSelector((state: RootState) => state.account.userData);
@@ -713,6 +714,37 @@ export default function TemplateEditor() {
     });
   };
 
+  // Add this new component near your other modal components
+  const renderProModal = () => {
+    if (!showProModal) return null;
+
+    return (
+      <View style={styles.modalOverlay}>
+        <View style={styles.proModalContainer}>
+          <View style={styles.proModalHeader}>
+            <ThemedText style={styles.proModalTitle}>Pro Feature</ThemedText>
+            <TouchableOpacity onPress={() => setShowProModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.proModalContent}>
+            <Ionicons name="star" size={48} color="#FFD700" />
+            <ThemedText style={styles.proModalText}>
+              Bulk sharing is available with Pro account on web
+            </ThemedText>
+            <TouchableOpacity 
+              style={styles.proModalButton}
+              onPress={() => setShowProModal(false)}
+            >
+              <ThemedText style={styles.proModalButtonText}>Got it</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   // Loading and error states
   if (loading) {
     return (
@@ -874,7 +906,7 @@ export default function TemplateEditor() {
                 />
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Bulk')}>
+              <TouchableOpacity style={styles.iconButton} onPress={() => setShowProModal(true)}>
                 <Ionicons name="albums-outline" size={24} color="#8B3DFF" />
               </TouchableOpacity>
             </View>
@@ -1020,6 +1052,8 @@ export default function TemplateEditor() {
           </View>
         </View>
       )}
+
+      {renderProModal()}
     </ThemedView>
   );
 }
@@ -1442,5 +1476,58 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     color: '#666',
     fontSize: 14,
+  },
+  proModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '80%',
+    maxWidth: 320,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  proModalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  proModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  proModalContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  proModalText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+    color: '#666',
+    lineHeight: 22,
+  },
+  proModalButton: {
+    backgroundColor: '#8B3DFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  proModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

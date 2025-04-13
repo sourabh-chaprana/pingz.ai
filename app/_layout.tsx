@@ -423,7 +423,7 @@ function SearchHeader({ navigation }: { navigation: any }) {
               <Ionicons name="search" size={20} color="#666" />
               <TextInput
                 ref={searchInputRef}
-                placeholder="Search templates... "
+                placeholder="Search Images "
                 placeholderTextColor="#666"
                 style={searchStyles.searchInput}
                 onFocus={handleSearchFocus}
@@ -459,7 +459,7 @@ function SearchHeader({ navigation }: { navigation: any }) {
 
               <TextInput
                 ref={searchInputRef}
-                placeholder="Search templates... "
+                placeholder="Search Images "
                 placeholderTextColor="#666"
                 style={searchStyles.searchActiveInput}
                 autoFocus={true}

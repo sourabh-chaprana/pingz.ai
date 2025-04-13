@@ -55,7 +55,7 @@ export default function CreateScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <ThemedText style={styles.title}>Create</ThemedText>
+        <ThemedText style={styles.title}>Category</ThemedText>
       </View>
       
       <ScrollView style={styles.content}>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     flex: 1,
   },
