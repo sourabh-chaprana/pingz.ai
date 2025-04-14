@@ -61,39 +61,24 @@ export default function PlanSelectionModal({
   const handlePlanSelect = async () => {
     try {
       setIsProcessing(true);
-
-      // Get plan price based on selection
       const planPrice = currentPlan === "pro" ? 499 : 299;
-
-      // Call the initiate payment API to get order ID
-      console.log("Initiating payment for:", planPrice);
-
+      
       const initiateResult = await dispatch(
         initiatePayment(planPrice)
       ).unwrap();
-      console.log("Initiate payment response:", initiateResult);
-
+      
       if (!initiateResult || !initiateResult.id) {
-        console.error("Invalid response format:", initiateResult);
-        setIsProcessing(false);
-        Alert.alert(
-          "Error",
-          "Failed to initiate payment. Invalid response format."
-        );
-        return;
+        throw new Error('Invalid response format');
       }
 
-      // Now show the checkout screen with the order ID
       setIsProcessing(false);
       setShowCheckout(true);
-    } catch (error: any) {
-      console.error("Payment initiation error:", error);
+    } catch (error) {
       setIsProcessing(false);
-
-      // More detailed error message
-      const errorMessage =
-        error.message || "Failed to process request. Please try again.";
-      Alert.alert("Error", errorMessage);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to process request. Please try again."
+      );
     }
   };
 
@@ -108,17 +93,33 @@ export default function PlanSelectionModal({
     onClose();
   };
 
-  // Loading overlay during API calls
-  const renderLoadingOverlay = () => {
-    if (!isProcessing) return null;
+  const renderContent = () => {
+    if (showCheckout) {
+      return (
+        <CheckoutScreen
+          planType={currentPlan}
+          onBack={() => setShowCheckout(false)}
+          onClose={handleClose}
+        />
+      );
+    }
 
-    return (
-      <View style={styles.loadingOverlay}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8B3DFF" />
-          <ThemedText style={styles.loadingText}>Processing...</ThemedText>
-        </View>
-      </View>
+    return currentPlan === "pro" ? (
+      <ProPlanDetails
+        onUpgrade={() => {
+          handlePlanSelect();
+        }}
+        onSwitchPlan={() => setCurrentPlan("personal")}
+        onClose={handleClose}
+      />
+    ) : (
+      <PersonalPlanDetails
+        onGetPlan={() => {
+          handlePlanSelect();
+        }}
+        onSwitchPlan={() => setCurrentPlan("pro")}
+        onClose={handleClose}
+      />
     );
   };
 
@@ -130,50 +131,28 @@ export default function PlanSelectionModal({
       statusBarTranslucent={true}
       onRequestClose={() => {
         if (showCheckout) {
-          handleBackFromCheckout();
+          setShowCheckout(false);
         } else {
           handleClose();
         }
       }}
     >
       <View style={styles.modalOverlay}>
-        <TouchableOpacity 
-          style={styles.modalBackground}
-          activeOpacity={1}
-          onPress={handleClose}
-        >
-          <View 
-            style={styles.modalContainer}
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >
-            {showCheckout ? (
-              <CheckoutScreen
-                planType={currentPlan}
-                onBack={handleBackFromCheckout}
-                onClose={handleClose}
-              />
-            ) : (
-              <ScrollView 
-                style={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {currentPlan === "pro" ? (
-                  <ProPlanDetails
-                    onUpgrade={handlePlanSelect}
-                    onSwitchPlan={() => setCurrentPlan("personal")}
-                  />
-                ) : (
-                  <PersonalPlanDetails
-                    onGetPlan={handlePlanSelect}
-                    onSwitchPlan={() => setCurrentPlan("pro")}
-                  />
-                )}
-              </ScrollView>
-            )}
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            {renderContent()}
           </View>
-        </TouchableOpacity>
+        </View>
       </View>
+
+      {isProcessing && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#8B3DFF" />
+            <ThemedText style={styles.loadingText}>Processing...</ThemedText>
+          </View>
+        </View>
+      )}
     </Modal>
   );
 }
@@ -182,23 +161,20 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   modalBackground: {
     flex: 1,
-    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContainer: {
-    width: '100%',
+    width: '90%',
     maxWidth: 400,
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
-    maxHeight: '90%',
+    maxHeight: Platform.OS === 'android' ? '80%' : '90%',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -211,21 +187,6 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  scrollContent: {
-    flex: 1,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 10,
-    width: 32,
-    height: 32,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   loadingOverlay: {
     position: 'absolute',
     top: 0,
@@ -235,20 +196,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 9999,
   },
   loadingContainer: {
     backgroundColor: '#fff',
     padding: 24,
     borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '80%',
-    maxWidth: 300,
   },
   loadingText: {
-    color: '#333',
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 16,
+    color: '#666',
   },
 });

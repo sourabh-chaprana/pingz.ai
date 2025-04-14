@@ -109,42 +109,35 @@ export default function CheckoutScreen({
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          
-          <ThemedText style={styles.headerTitle}>Checkout</ThemedText>
-          
-          <TouchableOpacity onPress={onClose} style={styles.headerButton}>
-            <Ionicons name="close" size={24} color="#000" />
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.headerButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        
+        <ThemedText style={styles.headerTitle}>Checkout</ThemedText>
+        
+        <TouchableOpacity onPress={onClose} style={styles.headerButton}>
+          <Ionicons name="close" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Continue</ThemedText>
+          <ThemedText style={styles.priceText}>
+            By clicking on pay you'll purchase your plan subscription of ₹{planPrice}/month
+          </ThemedText>
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Continue</ThemedText>
-            <ThemedText style={styles.priceText}>
-              By clicking on pay you'll purchase your plan subscription of ₹
-              {planPrice}/month
-            </ThemedText>
-          </View>
+        <TouchableOpacity style={styles.payButton} onPress={handlePayNow}>
+          <ThemedText style={styles.payButtonText}>Pay</ThemedText>
+        </TouchableOpacity>
 
-          {/* Pay Button */}
-          <TouchableOpacity style={styles.payButton} onPress={handlePayNow}>
-            <ThemedText style={styles.payButtonText}>Pay</ThemedText>
-          </TouchableOpacity>
-
-          {/* Terms */}
-          <TouchableOpacity style={styles.termsContainer}>
-            <ThemedText style={styles.termsText}>
-              Please read the terms and conditions.
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.termsContainer}>
+          <ThemedText style={styles.termsText}>
+            Please read the terms and conditions.
+          </ThemedText>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -152,15 +145,6 @@ export default function CheckoutScreen({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 20,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 400,
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
@@ -174,10 +158,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 8,
   },
   headerTitle: {
     fontSize: 18,

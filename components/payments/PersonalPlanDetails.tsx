@@ -6,14 +6,19 @@ import { ThemedText } from "../ThemedText";
 interface PersonalPlanDetailsProps {
   onGetPlan: () => void;
   onSwitchPlan: () => void;
+  onClose: () => void;
 }
 
 export default function PersonalPlanDetails({
   onGetPlan,
   onSwitchPlan,
+  onClose,
 }: PersonalPlanDetailsProps) {
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Ionicons name="close" size={24} color="#000" />
+      </TouchableOpacity>
       <ThemedText style={styles.title}>Personal Plan</ThemedText>
       
       <ThemedText style={styles.subtitle}>Here's what you get:</ThemedText>
@@ -135,5 +140,12 @@ const styles = StyleSheet.create({
   switchPlanText: {
     color: "#666",
     fontSize: 14,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 10,
+    padding: 8,
   },
 });
