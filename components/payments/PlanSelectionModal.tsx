@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "../ThemedText";
@@ -37,6 +38,25 @@ export default function PlanSelectionModal({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { loading, error } = useSelector((state: RootState) => state.payment);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (visible) {
+          if (showCheckout) {
+            handleBackFromCheckout();
+          } else {
+            handleClose();
+          }
+          return true;
+        }
+        return false;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [visible, showCheckout]);
 
   const handlePlanSelect = async () => {
     try {
@@ -105,48 +125,54 @@ export default function PlanSelectionModal({
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
+      transparent={true}
+      animationType="fade"
+      statusBarTranslucent={true}
+      onRequestClose={() => {
+        if (showCheckout) {
+          handleBackFromCheckout();
+        } else {
+          handleClose();
+        }
+      }}
     >
-      {renderLoadingOverlay()}
-
       <View style={styles.modalOverlay}>
-        {showCheckout ? (
-          <CheckoutScreen
-            planType={currentPlan}
-            onBack={handleBackFromCheckout}
-            onClose={handleClose}
-          />
-        ) : (
-          <View style={styles.modalContainer}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleClose}
-              disabled={isProcessing}
-            >
-              <Ionicons name="close" size={24} color="#333" />
-            </TouchableOpacity>
-
-            <ScrollView 
-              style={styles.scrollContent}
-              contentContainerStyle={styles.scrollContentContainer}
-              showsVerticalScrollIndicator={false}
-            >
-              {currentPlan === "pro" ? (
-                <ProPlanDetails
-                  onUpgrade={handlePlanSelect}
-                  onSwitchPlan={() => setCurrentPlan("personal")}
-                />
-              ) : (
-                <PersonalPlanDetails
-                  onGetPlan={handlePlanSelect}
-                  onSwitchPlan={() => setCurrentPlan("pro")}
-                />
-              )}
-            </ScrollView>
+        <TouchableOpacity 
+          style={styles.modalBackground}
+          activeOpacity={1}
+          onPress={handleClose}
+        >
+          <View 
+            style={styles.modalContainer}
+            onStartShouldSetResponder={() => true}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
+            {showCheckout ? (
+              <CheckoutScreen
+                planType={currentPlan}
+                onBack={handleBackFromCheckout}
+                onClose={handleClose}
+              />
+            ) : (
+              <ScrollView 
+                style={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {currentPlan === "pro" ? (
+                  <ProPlanDetails
+                    onUpgrade={handlePlanSelect}
+                    onSwitchPlan={() => setCurrentPlan("personal")}
+                  />
+                ) : (
+                  <PersonalPlanDetails
+                    onGetPlan={handlePlanSelect}
+                    onSwitchPlan={() => setCurrentPlan("pro")}
+                  />
+                )}
+              </ScrollView>
+            )}
           </View>
-        )}
+        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -155,13 +181,19 @@ export default function PlanSelectionModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'transparent',
+  },
+  modalBackground: {
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContainer: {
-    width: '90%',
+    width: '100%',
     maxWidth: 400,
+    maxHeight: Platform.OS === 'android' ? '80%' : '90%',
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
@@ -169,7 +201,7 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.25,
         shadowRadius: 10,
       },
       android: {
@@ -180,10 +212,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
-  scrollContentContainer: {
-    padding: 20,
-    paddingTop: 40,
-  },
   closeButton: {
     position: 'absolute',
     top: 16,
@@ -191,7 +219,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     width: 32,
     height: 32,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',

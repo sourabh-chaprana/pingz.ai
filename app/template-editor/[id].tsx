@@ -492,7 +492,7 @@ export default function TemplateEditor() {
 
     try {
       if (Platform.OS === 'web') {
-        // Web download logic - direct download without permissions
+        // Web download logic remains the same
         const response = await fetch(imageToDownload);
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
@@ -513,8 +513,8 @@ export default function TemplateEditor() {
         });
       } 
       else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        // Only request media library permissions for saving
-        const { status } = await MediaLibrary.requestPermissionsAsync();
+        // Only request MEDIA_LIBRARY permissions with specific write-only access
+        const { status } = await MediaLibrary.requestPermissionsAsync(false); // Pass false to indicate we don't need audio access
         
         if (status !== 'granted') {
           Toast.show({
@@ -547,7 +547,7 @@ export default function TemplateEditor() {
           }
         }
 
-        // Save to gallery
+        // Save to gallery using saveToLibraryAsync
         await MediaLibrary.saveToLibraryAsync(fileUri);
         
         // Cleanup
