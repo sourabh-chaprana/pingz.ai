@@ -513,7 +513,7 @@ export default function TemplateEditor() {
         });
       } 
       else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        // Only request MEDIA_LIBRARY permissions, not audio
+        // First request only media library permissions
         const { status } = await MediaLibrary.requestPermissionsAsync();
         
         if (status !== 'granted') {
@@ -526,43 +526,41 @@ export default function TemplateEditor() {
           return;
         }
 
-        // Create a temporary file
-        const filename = `pingz_${Date.now()}.png`;
-        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-
-        // Download or write the file
-        if (imageToDownload.startsWith('data:')) {
-          const base64Data = imageToDownload.split(',')[1];
-          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-        } else {
-          const downloadResult = await FileSystem.downloadAsync(
-            imageToDownload,
-            fileUri
-          );
-
-          if (downloadResult.status !== 200) {
-            throw new Error('Failed to download image');
+        // Fetch the image directly using fetch API instead of FileSystem
+        const response = await fetch(imageToDownload);
+        const blob = await response.blob();
+        
+        // Convert blob to base64
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        
+        reader.onloadend = async () => {
+          try {
+            const base64data = reader.result as string;
+            
+            // Save directly to media library
+            const asset = await MediaLibrary.createAssetAsync(base64data);
+            
+            if (asset) {
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Image saved to gallery',
+                position: 'bottom',
+              });
+            } else {
+              throw new Error('Failed to save image');
+            }
+          } catch (error) {
+            console.error('Save error:', error);
+            Toast.show({
+              type: 'error',
+              text1: 'Save Failed',
+              text2: 'Failed to save image to gallery',
+              position: 'bottom',
+            });
           }
-        }
-
-        // Save to gallery
-        await MediaLibrary.saveToLibraryAsync(fileUri);
-        
-        // Cleanup
-        try {
-          await FileSystem.deleteAsync(fileUri);
-        } catch (cleanupError) {
-          console.error('Cleanup error:', cleanupError);
-        }
-        
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Image saved to gallery',
-          position: 'bottom',
-        });
+        };
       }
     } catch (error) {
       console.error('Download error:', error);
