@@ -83,8 +83,9 @@ export default function TemplateEditor() {
   const [addFooter, setAddFooter] = useState(false);
   const [headerImage, setHeaderImage] = useState<string | null>(null);
   const [footerImage, setFooterImage] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Add user data state to store header/footer images
   const userData = useSelector((state: RootState) => state.account.userData);
@@ -100,8 +101,15 @@ export default function TemplateEditor() {
           dispatch(fetchTemplateById(templateId)),
           dispatch(fetchUserData())
         ]);
+        setIsInitialized(true);
       } catch (error) {
         console.error('Error fetching initial data:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to load template data',
+          position: 'bottom',
+        });
       }
     };
 
@@ -393,6 +401,37 @@ export default function TemplateEditor() {
               </View>
             </ScrollView>
           )}
+        </View>
+      </View>
+    );
+  };
+
+  // Move this function definition to the top of the component, after the state declarations
+  const renderProModal = () => {
+    if (!showProModal) return null;
+
+    return (
+      <View style={styles.modalOverlay}>
+        <View style={styles.proModalContainer}>
+          <View style={styles.proModalHeader}>
+            <ThemedText style={styles.proModalTitle}>Pro Feature</ThemedText>
+            <TouchableOpacity onPress={() => setShowProModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.proModalContent}>
+            <Ionicons name="star" size={48} color="#FFD700" />
+            <ThemedText style={styles.proModalText}>
+              Bulk sharing is available with Pro account on web
+            </ThemedText>
+            <TouchableOpacity 
+              style={styles.proModalButton}
+              onPress={() => setShowProModal(false)}
+            >
+              <ThemedText style={styles.proModalButtonText}>Got it</ThemedText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -711,77 +750,94 @@ export default function TemplateEditor() {
     }
   }, []);
 
-  // Add image error handling
-  const handleImageError = () => {
-    setImageLoading(false);
-    // Optionally show an error message for failed image loads
-    Toast.show({
-      type: 'error',
-      text1: 'Image Load Error',
-      text2: 'Failed to load image. Please try again.',
-      position: 'bottom',
-    });
-  };
+  // Add retry mechanism for failed loads
+  useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const retryLoadImage = () => {
+      if (retryCount < maxRetries && (generateImageError || !generatedImage)) {
+        retryCount++;
+        console.log(`Retrying image load attempt ${retryCount}`);
+        handleGenerateImage();
+      }
+    };
 
-  // Add this new component near your other modal components
-  const renderProModal = () => {
-    if (!showProModal) return null;
+    if (generateImageError) {
+      // Wait 2 seconds before retrying
+      const retryTimer = setTimeout(retryLoadImage, 2000);
+      return () => clearTimeout(retryTimer);
+    }
+  }, [generateImageError]);
 
-    return (
-      <View style={styles.modalOverlay}>
-        <View style={styles.proModalContainer}>
-          <View style={styles.proModalHeader}>
-            <ThemedText style={styles.proModalTitle}>Pro Feature</ThemedText>
-            <TouchableOpacity onPress={() => setShowProModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.proModalContent}>
-            <Ionicons name="star" size={48} color="#FFD700" />
-            <ThemedText style={styles.proModalText}>
-              Bulk sharing is available with Pro account on web
-            </ThemedText>
-            <TouchableOpacity 
-              style={styles.proModalButton}
-              onPress={() => setShowProModal(false)}
-            >
-              <ThemedText style={styles.proModalButtonText}>Got it</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
+  // Add this effect to handle loading states
+  useEffect(() => {
+    // If we have a generated image or template URL and we're not generating,
+    // ensure loading is false
+    if ((generatedImage || currentTemplate?.url) && !generatingImage) {
+      setImageLoading(false);
+    }
+  }, [generatedImage, currentTemplate?.url, generatingImage]);
+
+  // Add timeout to force-clear loading state
+  useEffect(() => {
+    if (imageLoading) {
+      // Force clear loading state after 10 seconds
+      const timeoutId = setTimeout(() => {
+        setImageLoading(false);
+      }, 10000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [imageLoading]);
+
+  // Add this near the top of your component
+  useEffect(() => {
+    const handleError = (error: Error) => {
+      console.error('Template Editor Error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Something went wrong. Please try again.',
+        position: 'bottom',
+      });
+    };
+
+    // Add error event listener
+    if (Platform.OS === 'web') {
+      window.addEventListener('error', handleError);
+      return () => window.removeEventListener('error', handleError);
+    }
+  }, []);
+
+  // Add better null checks for template variables
+  const renderTemplateVariables = () => {
+    if (!currentTemplate?.templateVariables) {
+      return null;
+    }
+
+    return currentTemplate.templateVariables.map((variable, index) => (
+      <View key={index} style={styles.formGroup}>
+        <ThemedText style={styles.formLabel}>
+          {toCamelCase(variable.name)}
+        </ThemedText>
+        {renderImageField(variable.name, variable.type)}
       </View>
-    );
+    ));
   };
 
-  // Loading and error states
-  if (loading) {
+  // Main render
+  if (!isInitialized || loading || !currentTemplate) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#8B3DFF" />
-        <ThemedText style={styles.loadingText}>Loading template...</ThemedText>
-      </View>
-    );
-  }
-  
-  if (error || !currentTemplate) {
-    return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="warning" size={48} color="#ff4444" />
-        <ThemedText style={styles.errorText}>
-          {error || 'Failed to load template'}
+        <ThemedText style={styles.loadingText}>
+          {!isInitialized ? 'Initializing...' : loading ? 'Loading template...' : 'Template not found'}
         </ThemedText>
-        <TouchableOpacity 
-          style={styles.retryButton} 
-          onPress={() => dispatch(fetchTemplateById(templateId))}
-        >
-          <ThemedText style={styles.retryText}>Retry</ThemedText>
-        </TouchableOpacity>
       </View>
     );
   }
-  
-  // Main render
+
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
@@ -845,19 +901,39 @@ export default function TemplateEditor() {
           <View style={styles.previewImageContainer}>
             <Image
               source={{ 
-                uri: generatedImage || currentTemplate.url || 'https://via.placeholder.com/300x500',
-                // Add cache control
-                cache: 'reload'  // Force reload for web
+                uri: generatedImage || (currentTemplate?.url) || 'https://via.placeholder.com/300x500',
+                headers: {
+                  'Cache-Control': 'no-cache',
+                  'Pragma': 'no-cache'
+                },
+                cache: Platform.OS === 'web' ? 'reload' : 'default'
               }}
               style={styles.previewImage}
               resizeMode="contain"
-              onLoadStart={() => setImageLoading(true)}
-              onLoad={() => setImageLoading(false)}
-              onError={handleImageError}
+              onLoadStart={() => {
+                setImageLoading(true);
+                // Reset error state when starting new load
+                if (generateImageError) {
+                  dispatch(generateImageFailure(null));
+                }
+              }}
+              onLoad={() => {
+                setImageLoading(false);
+              }}
+              onError={(error) => {
+                console.error('Image load error:', error);
+                setImageLoading(false);
+                Toast.show({
+                  type: 'error',
+                  text1: 'Image Load Error',
+                  text2: 'Failed to load image. Please try again.',
+                  position: 'bottom',
+                });
+              }}
             />
             
             {/* Only show loading overlay when actually loading */}
-            {(imageLoading || generatingImage) && (
+            {((imageLoading && !generatedImage) || generatingImage) && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#8B3DFF" />
                 <ThemedText style={styles.loadingText}>
@@ -926,12 +1002,7 @@ export default function TemplateEditor() {
         <View style={styles.formContainer}>
           <ThemedText style={styles.formTitle}>Customize Template</ThemedText>
           
-          {currentTemplate.templateVariables?.map((variable, index) => (
-            <View key={index} style={styles.formGroup}>
-              <ThemedText style={styles.formLabel}>{toCamelCase(variable.name)}</ThemedText>
-              {renderImageField(variable.name, variable.type)}
-            </View>
-          ))}
+          {renderTemplateVariables()}
           
           {/* Header & Footer Options */}
           <View style={styles.optionsContainer}>
