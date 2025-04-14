@@ -111,13 +111,13 @@ export default function CheckoutScreen({
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         
         <ThemedText style={styles.headerTitle}>Checkout</ThemedText>
         
         <TouchableOpacity onPress={onClose} style={styles.headerButton}>
-          <Ionicons name="close" size={24} color="#000" />
+          <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -145,7 +145,7 @@ export default function CheckoutScreen({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -155,7 +155,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#333',
+    backgroundColor: '#222222',
   },
   headerButton: {
     padding: 8,
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: '#fff',
   },
   content: {
     padding: 20,
@@ -174,18 +175,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
+    color: '#fff',
     marginBottom: 8,
   },
   priceText: {
     fontSize: 15,
-    color: '#666',
+    color: '#aaa',
     lineHeight: 20,
   },
   payButton: {
     backgroundColor: '#8B3DFF',
     borderRadius: 8,
-    padding: 16,
+    padding: 5,
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 14,
-    color: '#666',
+    color: '#aaa',
     textDecorationLine: 'underline',
   },
 });

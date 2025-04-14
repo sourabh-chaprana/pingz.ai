@@ -104,20 +104,16 @@ export default function PlanSelectionModal({
       );
     }
 
-    return currentPlan === "pro" ? (
+    return (
       <ProPlanDetails
         onUpgrade={() => {
+          setCurrentPlan("pro");
           handlePlanSelect();
         }}
-        onSwitchPlan={() => setCurrentPlan("personal")}
-        onClose={handleClose}
-      />
-    ) : (
-      <PersonalPlanDetails
-        onGetPlan={() => {
+        onSwitchPlan={() => {
+          setCurrentPlan("personal");
           handlePlanSelect();
         }}
-        onSwitchPlan={() => setCurrentPlan("pro")}
         onClose={handleClose}
       />
     );
@@ -160,7 +156,7 @@ export default function PlanSelectionModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalBackground: {
     flex: 1,
@@ -171,19 +167,19 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%',
     maxWidth: 400,
-    backgroundColor: '#fff',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     overflow: 'hidden',
-    maxHeight: Platform.OS === 'android' ? '80%' : '90%',
+    maxHeight: Platform.OS === 'android' ? '90%' : '95%',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
         shadowRadius: 10,
       },
       android: {
-        elevation: 5,
+        elevation: 8,
       },
     }),
   },

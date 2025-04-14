@@ -17,40 +17,71 @@ export default function ProPlanDetails({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <ThemedText style={styles.title}>Pro Plan</ThemedText>
+        <ThemedText style={styles.title}>Choose Your Plan</ThemedText>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#000" />
+          <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <ThemedText style={styles.subtitle}>Here's what you get:</ThemedText>
+      {/* Pro Plan Section */}
+      <View style={styles.planContainer}>
+        <View style={styles.proCard}>
+          <ThemedText style={styles.planTitle}>Pro Plan</ThemedText>
+          
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Ionicons name="document-text" size={24} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>Business Templates</ThemedText>
+            </View>
 
-      <View style={styles.featuresList}>
-        <View style={styles.featureItem}>
-          <Ionicons name="document-text" size={24} color="#8B3DFF" />
-          <ThemedText style={styles.featureText}>Business Templates</ThemedText>
+            <View style={styles.featureItem}>
+              <Ionicons name="people" size={24} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>Bulk Messaging</ThemedText>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Ionicons name="browsers" size={24} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>Header & Footer Placements</ThemedText>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.buyButton} onPress={onUpgrade}>
+            <ThemedText style={styles.buyButtonText}>Buy Now</ThemedText>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.featureItem}>
-          <Ionicons name="people" size={24} color="#8B3DFF" />
-          <ThemedText style={styles.featureText}>Bulk Messaging</ThemedText>
-        </View>
+        {/* Personal Plan Section */}
+        <View style={styles.personalCard}>
+          <ThemedText style={styles.planTitle}>Personal Plan</ThemedText>
+          
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Ionicons name="calendar-outline" size={22} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>
+                Festival & Birthday Templates
+              </ThemedText>
+            </View>
 
-        <View style={styles.featureItem}>
-          <Ionicons name="browsers" size={24} color="#8B3DFF" />
-          <ThemedText style={styles.featureText}>Header & Footer Placements</ThemedText>
+            <View style={styles.featureItem}>
+              <Ionicons name="logo-whatsapp" size={22} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>
+                Share on WhatsApp
+              </ThemedText>
+            </View>
+
+            <View style={styles.featureItem}>
+              <Ionicons name="share-social-outline" size={22} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>
+                Social Media Publishing
+              </ThemedText>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.buyButton} onPress={onSwitchPlan}>
+            <ThemedText style={styles.buyButtonText}>Buy Now</ThemedText>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <TouchableOpacity style={styles.upgradeButton} onPress={onUpgrade}>
-        <ThemedText style={styles.upgradeButtonText}>Upgrade to Pro</ThemedText>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.switchPlanButton} onPress={onSwitchPlan}>
-        <ThemedText style={styles.switchPlanText}>
-          Get Personal plan instead
-        </ThemedText>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -58,64 +89,73 @@ export default function ProPlanDetails({
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#000',
+    color: '#fff',
   },
   closeButton: {
     padding: 8,
   },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 24,
-    color: '#000',
+  planContainer: {
+    marginTop: 10,
+  },
+  proCard: {
+    backgroundColor: '#222222',
+    borderRadius: 12,
+    
+    padding: 20 ,
+    marginBottom: 20,
+    marginTop: 0,
+    // borderWidth: 2,
+    // borderColor: '#8B3DFF',
+  },
+  personalCard: {
+    backgroundColor: '#222222',
+    borderRadius: 12,
+    padding: 20,
+  },
+  planTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 16,
   },
   featuresList: {
-    gap: 16,
-    marginBottom: 24,
+    gap: 12,
+    marginBottom: 20,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-    gap: 12,
+    // padding: 12,
+    // backgroundColor: '#2D2D2D',
+    // borderRadius: 8,
+    // gap: 12,
   },
   featureText: {
     fontSize: 16,
-    color: '#000',
+    marginLeft: 10,
+    color: '#fff',
   },
-  upgradeButton: {
+  buyButton: {
     backgroundColor: '#8B3DFF',
     borderRadius: 8,
-    padding: 16,
+    padding: 5,
     alignItems: 'center',
-    marginBottom: 16,
   },
-  upgradeButtonText: {
+  buyButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
-  },
-  switchPlanButton: {
-    alignItems: 'center',
-  },
-  switchPlanText: {
-    color: '#666',
-    fontSize: 14,
-  },
+  }
 });
