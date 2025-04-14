@@ -34,34 +34,12 @@ export default function PlanSelectionModal({
 }: PlanSelectionModalProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [currentPlan, setCurrentPlan] = useState<"pro" | "personal">("pro");
-  const [showCheckout, setShowCheckout] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const { loading, error } = useSelector((state: RootState) => state.payment);
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        if (visible) {
-          if (showCheckout) {
-            handleBackFromCheckout();
-          } else {
-            handleClose();
-          }
-          return true;
-        }
-        return false;
-      }
-    );
-
-    return () => backHandler.remove();
-  }, [visible, showCheckout]);
-
-  const handlePlanSelect = async () => {
+  const handlePlanSelect = async (planType: "pro" | "personal") => {
     try {
       setIsProcessing(true);
-      const planPrice = currentPlan === "pro" ? 499 : 299;
+      const planPrice = planType === "pro" ? 499 : 399;
       
       const initiateResult = await dispatch(
         initiatePayment(planPrice)
@@ -71,8 +49,10 @@ export default function PlanSelectionModal({
         throw new Error('Invalid response format');
       }
 
-      setIsProcessing(false);
-      setShowCheckout(true);
+      // Here you can directly open your payment gateway/interface
+      // Instead of showing the checkout modal
+      // Example: openPaymentGateway(initiateResult.id);
+
     } catch (error) {
       setIsProcessing(false);
       Alert.alert(
@@ -82,41 +62,10 @@ export default function PlanSelectionModal({
     }
   };
 
-  const handleBackFromCheckout = () => {
-    setShowCheckout(false);
-  };
-
   const handleClose = () => {
-    setShowCheckout(false);
     setCurrentPlan("pro");
     dispatch(resetPaymentState());
     onClose();
-  };
-
-  const renderContent = () => {
-    if (showCheckout) {
-      return (
-        <CheckoutScreen
-          planType={currentPlan}
-          onBack={() => setShowCheckout(false)}
-          onClose={handleClose}
-        />
-      );
-    }
-
-    return (
-      <ProPlanDetails
-        onUpgrade={() => {
-          setCurrentPlan("pro");
-          handlePlanSelect();
-        }}
-        onSwitchPlan={() => {
-          setCurrentPlan("personal");
-          handlePlanSelect();
-        }}
-        onClose={handleClose}
-      />
-    );
   };
 
   return (
@@ -125,18 +74,16 @@ export default function PlanSelectionModal({
       transparent={true}
       animationType="fade"
       statusBarTranslucent={true}
-      onRequestClose={() => {
-        if (showCheckout) {
-          setShowCheckout(false);
-        } else {
-          handleClose();
-        }
-      }}
+      onRequestClose={handleClose}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
-            {renderContent()}
+            <ProPlanDetails
+              onUpgrade={() => handlePlanSelect("pro")}
+              onSwitchPlan={() => handlePlanSelect("personal")}
+              onClose={handleClose}
+            />
           </View>
         </View>
       </View>

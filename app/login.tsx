@@ -205,16 +205,8 @@ export default function LoginScreen() {
           await AsyncStorage.setItem('auth_token', result.idToken);
           await AsyncStorage.setItem('refreshToken', result.refreshToken || '');
 
-          Toast.show({
-            type: 'success',
-            text1: 'Success',
-            text2: result.message || 'Login successful',
-          });
-
-          // Add a small delay to ensure tokens are saved before navigation
-          setTimeout(() => {
-            router.replace('/(tabs)');
-          }, 300);
+          // Remove success toast and directly navigate
+          router.replace('/(tabs)');
         }
       }
     } catch (error) {
@@ -275,19 +267,13 @@ export default function LoginScreen() {
           token: result.idToken, 
           refreshToken: result.refreshToken 
         }));
-
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Login successful',
-        });
         
         // Clear OTP data and close modal
         setShowOtpModal(false);
         setOtp(['', '', '', '', '', '']);
         setTxnId('');
         
-        // Navigate to main app
+        // Navigate to main app without showing success toast
         router.replace('/(tabs)');
       } else {
         Toast.show({
@@ -422,16 +408,8 @@ export default function LoginScreen() {
             refreshToken: tokenData.refreshToken 
           }));
           
-          Toast.show({
-            type: 'success',
-            text1: 'Success',
-            text2: 'Google login successful',
-          });
-          
-          // Navigate to main app
-          setTimeout(() => {
-            router.replace('/(tabs)');
-          }, 300);
+          // Navigate to main app without showing success toast
+          router.replace('/(tabs)');
         } else {
           throw new Error('No idToken received from API');
         }

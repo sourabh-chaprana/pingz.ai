@@ -26,9 +26,17 @@ export default function ProPlanDetails({
       {/* Pro Plan Section */}
       <View style={styles.planContainer}>
         <View style={styles.proCard}>
-          <ThemedText style={styles.planTitle}>Pro Plan</ThemedText>
+          <View style={styles.planHeaderContainer}>
+            <ThemedText style={styles.planTitle}>Pro Plan</ThemedText>
+            <ThemedText style={styles.priceText}>₹499<ThemedText style={styles.yearText}>/year</ThemedText></ThemedText>
+          </View>
           
           <View style={styles.featuresList}>
+
+          <View style={styles.featureItem}>
+              <Ionicons name="star" size={24} color="#8B3DFF" />
+              <ThemedText style={styles.featureText}>Includes Personal Plan</ThemedText>
+            </View>
             <View style={styles.featureItem}>
               <Ionicons name="document-text" size={24} color="#8B3DFF" />
               <ThemedText style={styles.featureText}>Business Templates</ThemedText>
@@ -43,6 +51,8 @@ export default function ProPlanDetails({
               <Ionicons name="browsers" size={24} color="#8B3DFF" />
               <ThemedText style={styles.featureText}>Header & Footer Placements</ThemedText>
             </View>
+
+           
           </View>
 
           <TouchableOpacity style={styles.buyButton} onPress={onUpgrade}>
@@ -52,7 +62,10 @@ export default function ProPlanDetails({
 
         {/* Personal Plan Section */}
         <View style={styles.personalCard}>
-          <ThemedText style={styles.planTitle}>Personal Plan</ThemedText>
+          <View style={styles.planHeaderContainer}>
+            <ThemedText style={styles.planTitle}>Personal Plan</ThemedText>
+            <ThemedText style={styles.priceText}>₹399<ThemedText style={styles.yearText}>/year</ThemedText></ThemedText>
+          </View>
           
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
@@ -157,5 +170,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
-  }
+  },
+  planHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  priceText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  yearText: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '400',
+  },
 });
