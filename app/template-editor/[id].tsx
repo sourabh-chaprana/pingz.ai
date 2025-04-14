@@ -492,28 +492,24 @@ export default function TemplateEditor() {
 
     try {
       if (Platform.OS === 'web') {
-        // Web download logic remains unchanged
-        const response = await fetch(imageToDownload);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
+        // Simple direct download for web
         const link = document.createElement('a');
-        link.href = blobUrl;
+        link.href = imageToDownload;
         link.download = `pingz_${Date.now()}.png`;
+        link.target = '_blank';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
         
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: 'Image downloaded successfully',
+          text2: 'Image download started',
           position: 'bottom',
         });
       } 
       else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        // First request only media library permissions
+        // Only request photo library permissions, not audio
         const { status } = await MediaLibrary.requestPermissionsAsync();
         
         if (status !== 'granted') {
@@ -526,48 +522,64 @@ export default function TemplateEditor() {
           return;
         }
 
-        // Fetch the image directly using fetch API instead of FileSystem
-        const response = await fetch(imageToDownload);
-        const blob = await response.blob();
-        
-        // Convert blob to base64
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        
-        reader.onloadend = async () => {
-          try {
-            const base64data = reader.result as string;
-            
-            // Save directly to media library
-            const asset = await MediaLibrary.createAssetAsync(base64data);
-            
-            if (asset) {
-              Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Image saved to gallery',
-                position: 'bottom',
-              });
-            } else {
-              throw new Error('Failed to save image');
+        // Create a temporary file path
+        const filename = `pingz_${Date.now()}.png`;
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+        // Handle data URLs or regular URLs
+        if (imageToDownload.startsWith('data:')) {
+          const base64Data = imageToDownload.split(',')[1];
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        } else {
+          // Use downloadAsync with specific mime type to prevent audio permission requests
+          const downloadResult = await FileSystem.downloadAsync(
+            imageToDownload,
+            fileUri,
+            {
+              headers: {
+                Accept: 'image/*'
+              }
             }
-          } catch (error) {
-            console.error('Save error:', error);
-            Toast.show({
-              type: 'error',
-              text1: 'Save Failed',
-              text2: 'Failed to save image to gallery',
-              position: 'bottom',
-            });
+          );
+          
+          if (downloadResult.status !== 200) {
+            throw new Error('Failed to download image');
           }
-        };
+        }
+
+        // Save to media library
+        const asset = await MediaLibrary.createAssetAsync(fileUri);
+        
+        // Optional: Add to album
+        // const album = await MediaLibrary.getAlbumAsync('Pingz');
+        // if (album === null) {
+        //   await MediaLibrary.createAlbumAsync('Pingz', asset, false);
+        // } else {
+        //   await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        // }
+        
+        // Clean up the temp file
+        try {
+          await FileSystem.deleteAsync(fileUri, { idempotent: true });
+        } catch (cleanupError) {
+          console.error('Cleanup error:', cleanupError);
+        }
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Image saved to gallery',
+          position: 'bottom',
+        });
       }
     } catch (error) {
       console.error('Download error:', error);
       Toast.show({
         type: 'error',
         text1: 'Download Failed',
-        text2: 'Failed to save image',
+        text2: error.message || 'Failed to save image',
         position: 'bottom',
       });
     }

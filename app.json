@@ -12,8 +12,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryAddUsageDescription": "Allow Pingz to save images to your photo library",
-        "NSPhotoLibraryUsageDescription": "Allow Pingz to save images to your photo library"
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos.",
+        "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos."
       }
     },
     "android": {
@@ -22,8 +22,10 @@
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
-        "MEDIA_LIBRARY_WRITE_ONLY",
-        "WRITE_EXTERNAL_STORAGE"
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "MEDIA_LIBRARY"
       ],
       "package": "com.yourcompany.pingz",
       "config": {
