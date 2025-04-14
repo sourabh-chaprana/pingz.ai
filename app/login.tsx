@@ -461,7 +461,7 @@ export default function LoginScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <ThemedText style={styles.title}>L to Pingz</ThemedText>
+        <ThemedText style={styles.title}>Login to Pingz</ThemedText>
         
         <View style={styles.loginLinkContainer}>
           <ThemedText style={styles.loginLinkText}>Don't have an account? </ThemedText>
