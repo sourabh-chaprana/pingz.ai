@@ -478,7 +478,6 @@ export default function TemplateEditor() {
   };
 
   const handleDownload = async () => {
-    // If there's no generated image, use the template's original image
     const imageToDownload = generatedImage || currentTemplate?.url;
     
     if (!imageToDownload) {
@@ -493,7 +492,7 @@ export default function TemplateEditor() {
 
     try {
       if (Platform.OS === 'web') {
-        // Web download logic
+        // Web download logic - direct download without permissions
         const response = await fetch(imageToDownload);
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
@@ -514,10 +513,8 @@ export default function TemplateEditor() {
         });
       } 
       else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        // Request specific permission for saving images
-        const { status } = await MediaLibrary.requestPermissionsAsync(
-          MediaLibrary.PermissionStatus.LIMITED // This requests limited access
-        );
+        // Only request media library permissions for saving
+        const { status } = await MediaLibrary.requestPermissionsAsync();
         
         if (status !== 'granted') {
           Toast.show({
@@ -550,7 +547,7 @@ export default function TemplateEditor() {
           }
         }
 
-        // On iOS, simply save to gallery without album creation
+        // Save to gallery
         await MediaLibrary.saveToLibraryAsync(fileUri);
         
         // Cleanup
@@ -560,7 +557,6 @@ export default function TemplateEditor() {
           console.error('Cleanup error:', cleanupError);
         }
         
-        // Show success toast
         Toast.show({
           type: 'success',
           text1: 'Success',

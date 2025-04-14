@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Image, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "../ThemedText";
 
@@ -14,15 +14,15 @@ export default function ProPlanDetails({
 }: ProPlanDetailsProps) {
   return (
     <View style={styles.container}>
-      <ThemedText style={styles.title}>Upgrade to Pro Plan</ThemedText>
+      <ThemedText style={styles.title}>Pro Plan</ThemedText>
 
-      <View style={styles.descriptionContainer}>
+      {/* <View style={styles.descriptionContainer}>
         <Ionicons name="briefcase" size={24} color="#fff" style={styles.icon} />
         <ThemedText style={styles.description}>
           Designed for businesses, influencers, and marketers who need advanced
           messaging features.
         </ThemedText>
-      </View>
+      </View> */}
 
       <ThemedText style={styles.sectionTitle}>Here's what you get:</ThemedText>
 
@@ -38,9 +38,9 @@ export default function ProPlanDetails({
             <ThemedText style={styles.featureTitle}>
               Business Templates
             </ThemedText>
-            <ThemedText style={styles.featureDescription}>
+            {/* <ThemedText style={styles.featureDescription}>
               Access exclusive high-quality templates and design elements
-            </ThemedText>
+            </ThemedText> */}
           </View>
         </View>
 
@@ -53,9 +53,9 @@ export default function ProPlanDetails({
           />
           <View style={styles.featureTextContainer}>
             <ThemedText style={styles.featureTitle}>Bulk Messaging</ThemedText>
-            <ThemedText style={styles.featureDescription}>
+            {/* <ThemedText style={styles.featureDescription}>
               Expand your reach with web-based bulk messaging.
-            </ThemedText>
+            </ThemedText> */}
           </View>
         </View>
 
@@ -70,9 +70,9 @@ export default function ProPlanDetails({
             <ThemedText style={styles.featureTitle}>
               Header & Footer Placements
             </ThemedText>
-            <ThemedText style={styles.featureDescription}>
+            {/* <ThemedText style={styles.featureDescription}>
               Customize message layouts for a professional touch.
-            </ThemedText>
+            </ThemedText> */}
           </View>
         </View>
       </View>
@@ -104,30 +104,31 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#111",
     marginBottom: 16,
     textAlign: "center",
   },
   descriptionContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(139, 61, 255, 0.1)",
+    backgroundColor: "#f8f9fa",
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
   },
   icon: {
     marginRight: 12,
+    color: "#8B3DFF",
   },
   description: {
     fontSize: 16,
-    color: "#fff",
+    color: "#333",
     flex: 1,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#111",
     marginBottom: 16,
   },
   featuresList: {
@@ -137,23 +138,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 16,
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#eee",
   },
   featureIcon: {
     marginRight: 16,
     marginTop: 2,
+    color: "#8B3DFF",
   },
   featureTextContainer: {
     flex: 1,
   },
   featureTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#fff",
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#111",
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 15,
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "#666",
   },
   actionsContainer: {
     marginTop: 8,
@@ -175,7 +182,20 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   switchPlanText: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "#666",
     fontSize: 16,
+  },
+  featureItemShadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 });

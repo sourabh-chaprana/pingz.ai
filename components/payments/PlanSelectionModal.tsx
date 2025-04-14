@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "../ThemedText";
@@ -110,14 +111,14 @@ export default function PlanSelectionModal({
     >
       {renderLoadingOverlay()}
 
-      {showCheckout ? (
-        <CheckoutScreen
-          planType={currentPlan}
-          onBack={handleBackFromCheckout}
-          onClose={handleClose}
-        />
-      ) : (
-        <View style={styles.modalOverlay}>
+      <View style={styles.modalOverlay}>
+        {showCheckout ? (
+          <CheckoutScreen
+            planType={currentPlan}
+            onBack={handleBackFromCheckout}
+            onClose={handleClose}
+          />
+        ) : (
           <View style={styles.modalContainer}>
             <TouchableOpacity
               style={styles.closeButton}
@@ -127,20 +128,26 @@ export default function PlanSelectionModal({
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
 
-            {currentPlan === "pro" ? (
-              <ProPlanDetails
-                onUpgrade={handlePlanSelect}
-                onSwitchPlan={() => setCurrentPlan("personal")}
-              />
-            ) : (
-              <PersonalPlanDetails
-                onGetPlan={handlePlanSelect}
-                onSwitchPlan={() => setCurrentPlan("pro")}
-              />
-            )}
+            <ScrollView 
+              style={styles.scrollContent}
+              contentContainerStyle={styles.scrollContentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {currentPlan === "pro" ? (
+                <ProPlanDetails
+                  onUpgrade={handlePlanSelect}
+                  onSwitchPlan={() => setCurrentPlan("personal")}
+                />
+              ) : (
+                <PersonalPlanDetails
+                  onGetPlan={handlePlanSelect}
+                  onSwitchPlan={() => setCurrentPlan("pro")}
+                />
+              )}
+            </ScrollView>
           </View>
-        </View>
-      )}
+        )}
+      </View>
     </Modal>
   );
 }
@@ -148,63 +155,69 @@ export default function PlanSelectionModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
-    width: "100%",
-    maxWidth: 500,
-    backgroundColor: "#111",
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
     borderRadius: 16,
-    overflow: "hidden",
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 8,
+        elevation: 5,
       },
     }),
   },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    padding: 20,
+    paddingTop: 40,
+  },
   closeButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 16,
     right: 16,
     zIndex: 10,
     width: 32,
     height: 32,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: '#f5f5f5',
     borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingOverlay: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 9999,
   },
   loadingContainer: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: '#fff',
     padding: 24,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "80%",
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
     maxWidth: 300,
   },
   loadingText: {
-    color: "#fff",
+    color: '#333',
     marginTop: 16,
     fontSize: 16,
   },

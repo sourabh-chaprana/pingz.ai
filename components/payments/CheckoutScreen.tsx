@@ -109,27 +109,37 @@ export default function CheckoutScreen({
 
   return (
     <View style={styles.container}>
-      <View style={styles.checkoutBox}>
-        <View style={styles.headerContainer}>
+      <View style={styles.card}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          
           <ThemedText style={styles.headerTitle}>Checkout</ThemedText>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color="#333" />
+          
+          <TouchableOpacity onPress={onClose} style={styles.headerButton}>
+            <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
         </View>
 
+        {/* Content */}
         <View style={styles.content}>
-          <ThemedText style={styles.title}>Continue</ThemedText>
+          <View style={styles.section}>
+            <ThemedText style={styles.sectionTitle}>Continue</ThemedText>
+            <ThemedText style={styles.priceText}>
+              By clicking on pay you'll purchase your plan subscription of ₹
+              {planPrice}/month
+            </ThemedText>
+          </View>
 
-          <ThemedText style={styles.description}>
-            By clicking on pay you'll purchase your plan subscription of ₹
-            {planPrice}/month
-          </ThemedText>
-
+          {/* Pay Button */}
           <TouchableOpacity style={styles.payButton} onPress={handlePayNow}>
             <ThemedText style={styles.payButtonText}>Pay</ThemedText>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onBack}>
+          {/* Terms */}
+          <TouchableOpacity style={styles.termsContainer}>
             <ThemedText style={styles.termsText}>
               Please read the terms and conditions.
             </ThemedText>
@@ -143,86 +153,72 @@ export default function CheckoutScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     padding: 20,
   },
-  checkoutBox: {
-    width: "100%",
-    maxWidth: 500,
-    backgroundColor: "#121212",
-    borderRadius: 12,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
-  headerContainer: {
-    backgroundColor: "#1a1a1a",
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
   },
   content: {
-    padding: 24,
+    padding: 20,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 16,
-  },
-  description: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.7)",
+  section: {
     marginBottom: 24,
   },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
+  priceText: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 20,
+  },
   payButton: {
-    backgroundColor: "#8B3DFF",
+    backgroundColor: '#8B3DFF',
     borderRadius: 8,
     padding: 16,
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 16,
-    height: 56,
-    justifyContent: "center",
   },
   payButtonText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '500',
+  },
+  termsContainer: {
+    alignItems: 'center',
   },
   termsText: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.5)",
-    textAlign: "center",
-    textDecorationLine: "underline",
-  },
-  errorText: {
-    color: "#ff4444",
-    marginBottom: 16,
-    textAlign: "center",
+    color: '#666',
+    textDecorationLine: 'underline',
   },
 });

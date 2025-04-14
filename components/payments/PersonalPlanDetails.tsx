@@ -15,151 +15,107 @@ export default function PersonalPlanDetails({
   return (
     <View style={styles.container}>
       <ThemedText style={styles.title}>Personal Plan</ThemedText>
+      
+      <ThemedText style={styles.subtitle}>Here's what you get:</ThemedText>
 
-      <View style={styles.descriptionContainer}>
-        <Ionicons name="sparkles" size={24} color="#fff" style={styles.icon} />
-        <ThemedText style={styles.description}>
-          Perfect for individuals who love sending creative, personalized
-          messages for every occasion.
-        </ThemedText>
-      </View>
-
-      <ThemedText style={styles.sectionTitle}>Here's what you get:</ThemedText>
-
+      {/* Feature Items */}
       <View style={styles.featuresList}>
         <View style={styles.featureItem}>
-          <Ionicons
-            name="calendar"
-            size={24}
-            color="#fff"
+          <Ionicons 
+            name="calendar-outline" 
+            size={22} 
+            color="#8B3DFF" 
             style={styles.featureIcon}
           />
-          <View style={styles.featureTextContainer}>
-            <ThemedText style={styles.featureTitle}>
-              Festival & Birthday Templates
-            </ThemedText>
-            <ThemedText style={styles.featureDescription}>
-              Never miss a special day with ready-to-use birthday & festival
-              templates.
-            </ThemedText>
-          </View>
+          <ThemedText style={styles.featureText}>
+            Festival & Birthday Templates
+          </ThemedText>
         </View>
 
         <View style={styles.featureItem}>
-          <Ionicons
-            name="logo-whatsapp"
-            size={24}
-            color="#fff"
+          <Ionicons 
+            name="logo-whatsapp" 
+            size={22} 
+            color="#8B3DFF" 
             style={styles.featureIcon}
           />
-          <View style={styles.featureTextContainer}>
-            <ThemedText style={styles.featureTitle}>
-              Share on WhatsApp
-            </ThemedText>
-            <ThemedText style={styles.featureDescription}>
-              Instantly send your messages with just one click.
-            </ThemedText>
-          </View>
+          <ThemedText style={styles.featureText}>
+            Share on WhatsApp
+          </ThemedText>
         </View>
 
         <View style={styles.featureItem}>
-          <Ionicons
-            name="share-social"
-            size={24}
-            color="#fff"
+          <Ionicons 
+            name="share-social-outline" 
+            size={22} 
+            color="#8B3DFF" 
             style={styles.featureIcon}
           />
-          <View style={styles.featureTextContainer}>
-            <ThemedText style={styles.featureTitle}>
-              Social Media Publishing
-            </ThemedText>
-            <ThemedText style={styles.featureDescription}>
-              Post directly to your favorite social media platforms.
-            </ThemedText>
-          </View>
+          <ThemedText style={styles.featureText}>
+            Social Media Publishing
+          </ThemedText>
         </View>
       </View>
 
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.getPlanButton} onPress={onGetPlan}>
-          <ThemedText style={styles.getPlanButtonText}>
-            Get Personal Plan
-          </ThemedText>
-        </TouchableOpacity>
+      {/* Action Buttons */}
+      <TouchableOpacity style={styles.getPlanButton} onPress={onGetPlan}>
+        <ThemedText style={styles.getPlanButtonText}>
+          Get Personal Plan
+        </ThemedText>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.switchPlanButton}
-          onPress={onSwitchPlan}
-        >
-          <ThemedText style={styles.switchPlanText}>
-            Get Pro plan instead
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.switchPlanButton} onPress={onSwitchPlan}>
+        <ThemedText style={styles.switchPlanText}>
+          Get Pro plan instead
+        </ThemedText>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 16,
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#000",
     textAlign: "center",
+    marginBottom: 8,
   },
-  descriptionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(139, 61, 255, 0.1)",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  icon: {
-    marginRight: 12,
-  },
-  description: {
+  subtitle: {
     fontSize: 16,
-    color: "#fff",
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 16,
+    color: "#000",
+    textAlign: "center",
+    marginBottom: 24,
   },
   featuresList: {
     marginBottom: 24,
+    gap: 12, // Space between feature items
   },
   featureItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 16,
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   featureIcon: {
-    marginRight: 16,
-    marginTop: 2,
+    width: 24,
+    height: 24,
+    marginRight: 12,
   },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#fff",
-    marginBottom: 4,
-  },
-  featureDescription: {
+  featureText: {
     fontSize: 15,
-    color: "rgba(255, 255, 255, 0.7)",
-  },
-  actionsContainer: {
-    marginTop: 8,
+    color: "#000",
+    flex: 1,
+    fontWeight: "400",
+  
   },
   getPlanButton: {
     backgroundColor: "#8B3DFF",
@@ -171,14 +127,13 @@ const styles = StyleSheet.create({
   getPlanButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   switchPlanButton: {
     alignItems: "center",
-    padding: 12,
   },
   switchPlanText: {
-    color: "rgba(255, 255, 255, 0.7)",
-    fontSize: 16,
+    color: "#666",
+    fontSize: 14,
   },
 });
