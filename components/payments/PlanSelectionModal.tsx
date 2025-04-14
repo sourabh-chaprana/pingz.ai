@@ -181,11 +181,13 @@ export default function PlanSelectionModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -193,10 +195,10 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '100%',
     maxWidth: 400,
-    maxHeight: Platform.OS === 'android' ? '80%' : '90%',
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
+    maxHeight: '90%',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
