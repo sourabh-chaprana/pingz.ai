@@ -492,11 +492,10 @@ export default function TemplateEditor() {
 
     try {
       if (Platform.OS === 'web') {
-        // Simple direct download for web
+        // Web download logic
         const link = document.createElement('a');
         link.href = imageToDownload;
         link.download = `pingz_${Date.now()}.png`;
-        link.target = '_blank';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -504,75 +503,79 @@ export default function TemplateEditor() {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: 'Image download started',
+          text2: 'Image downloaded successfully',
           position: 'bottom',
         });
       } 
       else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        // Only request photo library permissions, not audio
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        
-        if (status !== 'granted') {
-          Toast.show({
-            type: 'error',
-            text1: 'Permission Required',
-            text2: 'Please allow access to save images to your gallery',
-            position: 'bottom',
-          });
-          return;
-        }
-
-        // Create a temporary file path
-        const filename = `pingz_${Date.now()}.png`;
-        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-
-        // Handle data URLs or regular URLs
-        if (imageToDownload.startsWith('data:')) {
-          const base64Data = imageToDownload.split(',')[1];
-          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-        } else {
-          // Use downloadAsync with specific mime type to prevent audio permission requests
-          const downloadResult = await FileSystem.downloadAsync(
-            imageToDownload,
-            fileUri,
-            {
-              headers: {
-                Accept: 'image/*'
-              }
-            }
-          );
-          
-          if (downloadResult.status !== 200) {
-            throw new Error('Failed to download image');
+        // First check if we need storage permissions
+        if (Platform.OS === 'android') {
+          // On newer Android, we need storage permissions
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          if (status !== 'granted') {
+            Toast.show({
+              type: 'error',
+              text1: 'Permission Required',
+              text2: 'Please allow access to save images',
+              position: 'bottom',
+            });
+            return;
           }
         }
 
-        // Save to media library
-        const asset = await MediaLibrary.createAssetAsync(fileUri);
+        // On iOS we don't need permissions for this method
         
-        // Optional: Add to album
-        // const album = await MediaLibrary.getAlbumAsync('Pingz');
-        // if (album === null) {
-        //   await MediaLibrary.createAlbumAsync('Pingz', asset, false);
-        // } else {
-        //   await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-        // }
-        
-        // Clean up the temp file
+        // Alternative download approach for mobile
         try {
+          // First download the image to cache
+          const filename = `pingz_${Date.now()}.png`;
+          let fileUri = '';
+          
+          if (imageToDownload.startsWith('data:')) {
+            // Handle data URLs
+            fileUri = FileSystem.cacheDirectory + filename;
+            const base64Data = imageToDownload.split(',')[1];
+            await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+          } else {
+            // Regular URL - download with specific options to avoid audio permissions
+            const downloadOptions = {
+              headers: {
+                'Accept': 'image/png,image/jpeg',
+                'Content-Type': 'image/png'
+              }
+            };
+            
+            const downloadResult = await FileSystem.downloadAsync(
+              imageToDownload,
+              FileSystem.cacheDirectory + filename,
+              downloadOptions
+            );
+            
+            if (downloadResult.status !== 200) {
+              throw new Error('Download failed');
+            }
+            
+            fileUri = downloadResult.uri;
+          }
+          
+          // Now save to photo library using a different method
+          const asset = await MediaLibrary.createAssetAsync(fileUri);
+          
+          // Delete the temporary file
           await FileSystem.deleteAsync(fileUri, { idempotent: true });
-        } catch (cleanupError) {
-          console.error('Cleanup error:', cleanupError);
+          
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Image saved to gallery',
+            position: 'bottom',
+          });
+        } catch (err) {
+          console.error('Download error:', err);
+          throw new Error('Failed to download image: ' + err.message);
         }
-        
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Image saved to gallery',
-          position: 'bottom',
-        });
       }
     } catch (error) {
       console.error('Download error:', error);
